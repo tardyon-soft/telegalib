@@ -15,5 +15,23 @@ public @interface OnBusinessMessage {
 
     String textStartsWith() default "";
 
+    boolean paidMediaPresent() default false;
+
+    boolean paidMediaPurchasedPresent() default false;
+
+    boolean giftPresent() default false;
+
+    boolean uniqueGiftPresent() default false;
+
+    boolean giftUpgradeSentPresent() default false;
+
+    boolean refundedPaymentPresent() default false;
+
+    boolean successfulPaymentPresent() default false;
+
+    boolean storyPresent() default false;
+
+    boolean checklistPresent() default false;
+
     String state() default "";
 }

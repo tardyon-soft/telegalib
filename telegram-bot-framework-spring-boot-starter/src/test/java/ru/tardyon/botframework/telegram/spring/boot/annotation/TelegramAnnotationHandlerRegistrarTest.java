@@ -18,7 +18,10 @@ import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.User;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
+import ru.tardyon.botframework.telegram.api.model.payment.Gift;
+import ru.tardyon.botframework.telegram.api.model.payment.GiftInfo;
 import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
+import ru.tardyon.botframework.telegram.api.model.payment.RefundedPayment;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingAddress;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
 import ru.tardyon.botframework.telegram.api.model.webapp.WebAppData;
@@ -58,6 +61,8 @@ class TelegramAnnotationHandlerRegistrarTest {
                 router.route(new UpdateContext(updateWithEditedBusinessMessage("biz-edited"), apiClient));
                 router.route(new UpdateContext(updateWithDeletedBusinessMessages(), apiClient));
                 router.route(new UpdateContext(updateWithWebAppDataMessage(), apiClient));
+                router.route(new UpdateContext(updateWithGiftServiceMessage(), apiClient));
+                router.route(new UpdateContext(updateWithBusinessRefundedPaymentMessage(), apiClient));
 
                 UpdateContext stateful = new UpdateContext(updateWithMessage("name:John"), apiClient);
                 stateful.state().set("form.awaiting_name");
@@ -75,6 +80,8 @@ class TelegramAnnotationHandlerRegistrarTest {
                 assertThat(controller.editedBusinessMessageCalls.get()).isEqualTo(1);
                 assertThat(controller.deletedBusinessMessagesCalls.get()).isEqualTo(1);
                 assertThat(controller.webAppDataCalls.get()).isEqualTo(1);
+                assertThat(controller.giftServiceCalls.get()).isEqualTo(1);
+                assertThat(controller.businessRefundCalls.get()).isEqualTo(1);
                 assertThat(controller.lastMessageWrapper).isNotNull();
                 assertThat(controller.lastCallbackWrapper).isNotNull();
             });
@@ -237,6 +244,62 @@ class TelegramAnnotationHandlerRegistrarTest {
         return new Update(10L, null, null, null, null, null, null, null, null, null, null, deleted, null, null);
     }
 
+    private static Update updateWithGiftServiceMessage() {
+        Gift gift = new Gift("gift-1", null, 10, null, false, null, null, null, null, null, null, null, null);
+        GiftInfo giftInfo = new GiftInfo(gift, null, null, null, null, null, "Gift", null, null, null);
+        Message message = new Message(
+            null,
+            14,
+            new User(100L, false, "John", null, "john", "en", null, null, null),
+            null,
+            new Chat(200L, "private", null, null, "John", null, null),
+            1_710_000_005,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            giftInfo,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+        return new Update(12L, message, null, null, null, null, null, null);
+    }
+
+    private static Update updateWithBusinessRefundedPaymentMessage() {
+        Message message = new Message(
+            "bc-1",
+            15,
+            new User(100L, false, "John", null, "john", "en", null, null, null),
+            null,
+            new Chat(200L, "private", null, null, "John", null, null),
+            1_710_000_006,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            new RefundedPayment("XTR", 5, "payload-1", "charge-1", null),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+        return new Update(13L, null, null, null, null, null, null, null, null, message, null, null, null, null);
+    }
+
     @Configuration(proxyBeanMethods = false)
     static class AnnotatedControllerConfiguration {
         @Bean
@@ -267,6 +330,8 @@ class TelegramAnnotationHandlerRegistrarTest {
         private final AtomicInteger editedBusinessMessageCalls = new AtomicInteger();
         private final AtomicInteger deletedBusinessMessagesCalls = new AtomicInteger();
         private final AtomicInteger webAppDataCalls = new AtomicInteger();
+        private final AtomicInteger giftServiceCalls = new AtomicInteger();
+        private final AtomicInteger businessRefundCalls = new AtomicInteger();
 
         private TelegramMessage lastMessageWrapper;
         private TelegramCallbackQuery lastCallbackWrapper;
@@ -348,6 +413,20 @@ class TelegramAnnotationHandlerRegistrarTest {
             assertThat(webAppData).isNotNull();
             assertThat(webAppData.buttonText()).isEqualTo("Open App");
             assertThat(context).isNotNull();
+        }
+
+        @OnMessage(giftPresent = true)
+        public void onGiftServiceMessage(GiftInfo giftInfo) {
+            giftServiceCalls.incrementAndGet();
+            assertThat(giftInfo).isNotNull();
+            assertThat(giftInfo.gift().id()).isEqualTo("gift-1");
+        }
+
+        @OnBusinessMessage(refundedPaymentPresent = true)
+        public void onBusinessRefunded(RefundedPayment refundedPayment) {
+            businessRefundCalls.incrementAndGet();
+            assertThat(refundedPayment).isNotNull();
+            assertThat(refundedPayment.telegramPaymentChargeId()).isEqualTo("charge-1");
         }
     }
 

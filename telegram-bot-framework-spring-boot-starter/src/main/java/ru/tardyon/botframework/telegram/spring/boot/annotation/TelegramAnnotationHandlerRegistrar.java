@@ -16,8 +16,16 @@ import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
+import ru.tardyon.botframework.telegram.api.model.checklist.Checklist;
+import ru.tardyon.botframework.telegram.api.model.payment.GiftInfo;
+import ru.tardyon.botframework.telegram.api.model.payment.PaidMediaInfo;
+import ru.tardyon.botframework.telegram.api.model.payment.PaidMediaPurchased;
 import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
+import ru.tardyon.botframework.telegram.api.model.payment.RefundedPayment;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
+import ru.tardyon.botframework.telegram.api.model.payment.SuccessfulPayment;
+import ru.tardyon.botframework.telegram.api.model.payment.UniqueGiftInfo;
+import ru.tardyon.botframework.telegram.api.model.story.Story;
 import ru.tardyon.botframework.telegram.api.model.webapp.WebAppData;
 import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramMessage;
@@ -123,6 +131,33 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
         if (annotation.webAppDataPresent()) {
             filter = filter.and(message -> message != null && message.webAppData() != null);
         }
+        if (annotation.paidMediaPresent()) {
+            filter = filter.and(message -> message != null && message.paidMedia() != null);
+        }
+        if (annotation.paidMediaPurchasedPresent()) {
+            filter = filter.and(message -> message != null && message.paidMediaPurchased() != null);
+        }
+        if (annotation.giftPresent()) {
+            filter = filter.and(message -> message != null && message.gift() != null);
+        }
+        if (annotation.uniqueGiftPresent()) {
+            filter = filter.and(message -> message != null && message.uniqueGift() != null);
+        }
+        if (annotation.giftUpgradeSentPresent()) {
+            filter = filter.and(message -> message != null && message.giftUpgradeSent() != null);
+        }
+        if (annotation.refundedPaymentPresent()) {
+            filter = filter.and(message -> message != null && message.refundedPayment() != null);
+        }
+        if (annotation.successfulPaymentPresent()) {
+            filter = filter.and(message -> message != null && message.successfulPayment() != null);
+        }
+        if (annotation.storyPresent()) {
+            filter = filter.and(message -> message != null && message.story() != null);
+        }
+        if (annotation.checklistPresent()) {
+            filter = filter.and(message -> message != null && message.checklist() != null);
+        }
         return filter;
     }
 
@@ -196,7 +231,7 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
 
     private void registerBusinessMessageHandler(Object bean, Method method, OnBusinessMessage annotation) {
         validateParameters(method, HandlerType.BUSINESS_MESSAGE);
-        Filter<Message> messageFilter = buildBusinessMessageFilter(annotation.textEquals(), annotation.textStartsWith());
+        Filter<Message> messageFilter = buildBusinessMessageFilter(annotation);
         String state = annotation.state();
         router.businessMessage((context, message) -> {
             if (!messageFilter.test(message)) {
@@ -227,13 +262,72 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
         );
     }
 
+    private Filter<Message> buildBusinessMessageFilter(OnBusinessMessage annotation) {
+        return buildBusinessMessageFilter(
+            annotation.textEquals(),
+            annotation.textStartsWith(),
+            annotation.paidMediaPresent(),
+            annotation.paidMediaPurchasedPresent(),
+            annotation.giftPresent(),
+            annotation.uniqueGiftPresent(),
+            annotation.giftUpgradeSentPresent(),
+            annotation.refundedPaymentPresent(),
+            annotation.successfulPaymentPresent(),
+            annotation.storyPresent(),
+            annotation.checklistPresent()
+        );
+    }
+
     private Filter<Message> buildBusinessMessageFilter(String textEquals, String textStartsWith) {
+        return buildBusinessMessageFilter(textEquals, textStartsWith, false, false, false, false, false, false, false, false, false);
+    }
+
+    private Filter<Message> buildBusinessMessageFilter(
+        String textEquals,
+        String textStartsWith,
+        boolean paidMediaPresent,
+        boolean paidMediaPurchasedPresent,
+        boolean giftPresent,
+        boolean uniqueGiftPresent,
+        boolean giftUpgradeSentPresent,
+        boolean refundedPaymentPresent,
+        boolean successfulPaymentPresent,
+        boolean storyPresent,
+        boolean checklistPresent
+    ) {
         Filter<Message> filter = Filters.any();
         if (hasText(textEquals)) {
             filter = filter.and(Filters.textEquals(textEquals));
         }
         if (hasText(textStartsWith)) {
             filter = filter.and(Filters.textStartsWith(textStartsWith));
+        }
+        if (paidMediaPresent) {
+            filter = filter.and(message -> message != null && message.paidMedia() != null);
+        }
+        if (paidMediaPurchasedPresent) {
+            filter = filter.and(message -> message != null && message.paidMediaPurchased() != null);
+        }
+        if (giftPresent) {
+            filter = filter.and(message -> message != null && message.gift() != null);
+        }
+        if (uniqueGiftPresent) {
+            filter = filter.and(message -> message != null && message.uniqueGift() != null);
+        }
+        if (giftUpgradeSentPresent) {
+            filter = filter.and(message -> message != null && message.giftUpgradeSent() != null);
+        }
+        if (refundedPaymentPresent) {
+            filter = filter.and(message -> message != null && message.refundedPayment() != null);
+        }
+        if (successfulPaymentPresent) {
+            filter = filter.and(message -> message != null && message.successfulPayment() != null);
+        }
+        if (storyPresent) {
+            filter = filter.and(message -> message != null && message.story() != null);
+        }
+        if (checklistPresent) {
+            filter = filter.and(message -> message != null && message.checklist() != null);
         }
         return filter;
     }
@@ -280,7 +374,15 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
         return switch (handlerType) {
             case MESSAGE, BUSINESS_MESSAGE, EDITED_BUSINESS_MESSAGE ->
                 parameterType == Message.class || (handlerType == HandlerType.MESSAGE && parameterType == TelegramMessage.class)
-                    || parameterType == WebAppData.class;
+                    || parameterType == WebAppData.class
+                    || parameterType == PaidMediaInfo.class
+                    || parameterType == PaidMediaPurchased.class
+                    || parameterType == GiftInfo.class
+                    || parameterType == UniqueGiftInfo.class
+                    || parameterType == RefundedPayment.class
+                    || parameterType == SuccessfulPayment.class
+                    || parameterType == Story.class
+                    || parameterType == Checklist.class;
             case CALLBACK_QUERY -> parameterType == CallbackQuery.class || parameterType == TelegramCallbackQuery.class;
             case INLINE_QUERY -> parameterType == InlineQuery.class;
             case CHOSEN_INLINE_RESULT -> parameterType == ChosenInlineResult.class;
@@ -314,6 +416,30 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
         if (parameterType == WebAppData.class) {
             return ((Message) event).webAppData();
         }
+        if (parameterType == PaidMediaInfo.class) {
+            return ((Message) event).paidMedia();
+        }
+        if (parameterType == PaidMediaPurchased.class) {
+            return ((Message) event).paidMediaPurchased();
+        }
+        if (parameterType == GiftInfo.class) {
+            return ((Message) event).gift();
+        }
+        if (parameterType == UniqueGiftInfo.class) {
+            return ((Message) event).uniqueGift();
+        }
+        if (parameterType == RefundedPayment.class) {
+            return ((Message) event).refundedPayment();
+        }
+        if (parameterType == SuccessfulPayment.class) {
+            return ((Message) event).successfulPayment();
+        }
+        if (parameterType == Story.class) {
+            return ((Message) event).story();
+        }
+        if (parameterType == Checklist.class) {
+            return ((Message) event).checklist();
+        }
         if (parameterType == TelegramMessage.class) {
             return context.telegramMessage();
         }
@@ -336,6 +462,30 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
         }
         if (parameterType == WebAppData.class) {
             return ((Message) event).webAppData();
+        }
+        if (parameterType == PaidMediaInfo.class) {
+            return ((Message) event).paidMedia();
+        }
+        if (parameterType == PaidMediaPurchased.class) {
+            return ((Message) event).paidMediaPurchased();
+        }
+        if (parameterType == GiftInfo.class) {
+            return ((Message) event).gift();
+        }
+        if (parameterType == UniqueGiftInfo.class) {
+            return ((Message) event).uniqueGift();
+        }
+        if (parameterType == RefundedPayment.class) {
+            return ((Message) event).refundedPayment();
+        }
+        if (parameterType == SuccessfulPayment.class) {
+            return ((Message) event).successfulPayment();
+        }
+        if (parameterType == Story.class) {
+            return ((Message) event).story();
+        }
+        if (parameterType == Checklist.class) {
+            return ((Message) event).checklist();
         }
         throw new IllegalStateException("Unsupported business message parameter type: " + parameterType.getName());
     }

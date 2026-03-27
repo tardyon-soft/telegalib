@@ -25,6 +25,8 @@ import ru.tardyon.botframework.telegram.polling.LongPollingOptions;
 import ru.tardyon.botframework.telegram.polling.LongPollingRunner;
 import ru.tardyon.botframework.telegram.spring.boot.lifecycle.TelegramBotLifecycle;
 import ru.tardyon.botframework.telegram.spring.boot.properties.TelegramBotFrameworkProperties;
+import ru.tardyon.botframework.telegram.spring.boot.service.TelegramBusinessOperations;
+import ru.tardyon.botframework.telegram.spring.boot.service.TelegramMonetizationOperations;
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
 import ru.tardyon.botframework.telegram.webhook.DefaultWebhookUpdateProcessor;
@@ -111,6 +113,18 @@ public class TelegramBotFrameworkAutoConfiguration {
     @ConditionalOnMissingBean
     public TelegramBot telegramBot(LongPollingRunner longPollingRunner, Dispatcher telegramDispatcher) {
         return new DefaultTelegramBot(longPollingRunner, telegramDispatcher);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TelegramMonetizationOperations telegramMonetizationOperations(TelegramApiClient telegramApiClient) {
+        return new TelegramMonetizationOperations(telegramApiClient);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TelegramBusinessOperations telegramBusinessOperations(TelegramApiClient telegramApiClient) {
+        return new TelegramBusinessOperations(telegramApiClient);
     }
 
     @Bean
