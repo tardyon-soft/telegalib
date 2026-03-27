@@ -64,3 +64,26 @@ Multi-module Gradle project for Telegram bot runtime/library with Stage 5 scope.
 - `starter` must remain a thin integration layer and must not duplicate core runtime/business logic.
 - `demo` is usage sample only and must not become runtime implementation.
 - Scope is stage-bounded; avoid speculative abstractions and out-of-stage features.
+
+## Capability Layer (Stage 6 Scaffold)
+
+Core contains a version/capability compatibility model in package
+`ru.tardyon.botframework.telegram.api.capability`.
+
+Example usage:
+
+```java
+import ru.tardyon.botframework.telegram.api.capability.BotApiCapabilities;
+import ru.tardyon.botframework.telegram.api.capability.BotApiCapabilitiesResolver;
+import ru.tardyon.botframework.telegram.api.capability.BotApiCapability;
+import ru.tardyon.botframework.telegram.api.capability.BotApiVersion;
+
+BotApiCapabilities caps = BotApiCapabilitiesResolver.forDeclaredVersion(BotApiVersion.of(9, 3));
+boolean paidMediaSupported = caps.supports(BotApiCapability.PAID_MEDIA);
+boolean privateTopicsSupported = caps.supports(BotApiCapability.PRIVATE_CHAT_TOPICS);
+```
+
+The layer is explicit and manual:
+- no network auto-detection
+- no runtime permission engine
+- only declared version or manually configured capability profile
