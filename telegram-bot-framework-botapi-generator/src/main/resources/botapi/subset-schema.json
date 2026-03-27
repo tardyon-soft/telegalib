@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "source": "https://core.telegram.org/bots/api and https://core.telegram.org/bots/api-changelog",
+  "types": [
+    {
+      "name": "GeneratedUser",
+      "packageName": "ru.tardyon.botframework.telegram.generator.generated.model",
+      "description": "Subset from User object",
+      "fields": [
+        { "name": "id", "javaType": "Long", "jsonName": "id", "required": true, "description": "Unique identifier" },
+        { "name": "isBot", "javaType": "Boolean", "jsonName": "is_bot", "required": true, "description": "True if this user is a bot" },
+        { "name": "firstName", "javaType": "String", "jsonName": "first_name", "required": true, "description": "First name" },
+        { "name": "username", "javaType": "String", "jsonName": "username", "required": false, "description": "Username" }
+      ]
+    },
+    {
+      "name": "GeneratedChat",
+      "packageName": "ru.tardyon.botframework.telegram.generator.generated.model",
+      "description": "Subset from Chat object",
+      "fields": [
+        { "name": "id", "javaType": "Long", "jsonName": "id", "required": true, "description": "Chat id" },
+        { "name": "type", "javaType": "String", "jsonName": "type", "required": true, "description": "Chat type" },
+        { "name": "title", "javaType": "String", "jsonName": "title", "required": false, "description": "Optional title" }
+      ]
+    },
+    {
+      "name": "GeneratedMessage",
+      "packageName": "ru.tardyon.botframework.telegram.generator.generated.model",
+      "description": "Subset from Message object",
+      "fields": [
+        { "name": "messageId", "javaType": "Integer", "jsonName": "message_id", "required": true, "description": "Message identifier" },
+        { "name": "chat", "javaType": "GeneratedChat", "jsonName": "chat", "required": true, "description": "Message chat" },
+        { "name": "text", "javaType": "String", "jsonName": "text", "required": false, "description": "Message text" }
+      ]
+    }
+  ],
+  "methods": [
+    {
+      "methodName": "getUpdates",
+      "requestClassName": "GeneratedGetUpdatesRequest",
+      "requestPackage": "ru.tardyon.botframework.telegram.generator.generated.method",
+      "resultType": "java.util.List<ru.tardyon.botframework.telegram.generator.generated.model.GeneratedMessage>",
+      "description": "Subset of getUpdates method parameters",
+      "parameters": [
+        { "name": "offset", "javaType": "Integer", "jsonName": "offset", "required": false, "description": "Identifier of first update" },
+        { "name": "limit", "javaType": "Integer", "jsonName": "limit", "required": false, "description": "Updates limit" },
+        { "name": "timeout", "javaType": "Integer", "jsonName": "timeout", "required": false, "description": "Polling timeout" }
+      ]
+    },
+    {
+      "methodName": "sendMessage",
+      "requestClassName": "GeneratedSendMessageRequest",
+      "requestPackage": "ru.tardyon.botframework.telegram.generator.generated.method",
+      "resultType": "ru.tardyon.botframework.telegram.generator.generated.model.GeneratedMessage",
+      "description": "Subset of sendMessage parameters",
+      "parameters": [
+        { "name": "chatId", "javaType": "Object", "jsonName": "chat_id", "required": true, "description": "Target chat" },
+        { "name": "text", "javaType": "String", "jsonName": "text", "required": true, "description": "Message text" }
+      ]
+    },
+    {
+      "methodName": "deleteMessage",
+      "requestClassName": "GeneratedDeleteMessageRequest",
+      "requestPackage": "ru.tardyon.botframework.telegram.generator.generated.method",
+      "resultType": "java.lang.Boolean",
+      "description": "Subset of deleteMessage parameters",
+      "parameters": [
+        { "name": "chatId", "javaType": "Object", "jsonName": "chat_id", "required": true, "description": "Target chat" },
+        { "name": "messageId", "javaType": "Integer", "jsonName": "message_id", "required": true, "description": "Message to delete" }
+      ]
+    }
+  ]
+}
