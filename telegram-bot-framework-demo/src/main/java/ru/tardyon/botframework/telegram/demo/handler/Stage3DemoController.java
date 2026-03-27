@@ -69,7 +69,7 @@ public class Stage3DemoController {
 
     private static final String STATE_AWAITING_NAME = "form.awaiting_name";
     private static final String STATE_AWAITING_LANGUAGE = "form.awaiting_language";
-    private static final String BUY_TEST_PAYLOAD = "demo:buy-test";
+    private static final String BUY_TEST_PAYLOAD = "demo:buy_test";
 
     private final TelegramApiClient telegramApiClient;
     private final TelegramMonetizationOperations monetizationOperations;
@@ -104,37 +104,37 @@ public class Stage3DemoController {
         telegramMessage.reply(
             "Stage 4 demo:\n" +
                 "/startform - FSM диалог\n" +
-                "/commands-init - регистрация команд\n" +
-                "/buy-test - отправить invoice\n" +
+                "/commands_init - регистрация команд\n" +
+                "/buy_test - отправить invoice\n" +
                 "/webapp - reply keyboard с web_app\n" +
-                "/prepared-inline-test - savePreparedInlineMessage\n" +
+                "/prepared_inline_test - savePreparedInlineMessage\n" +
                 "/albumtest - media group\n" +
-                "/menubutton-init - menu button\n" +
-                "/paid-media-test - sendPaidMedia\n" +
-                "/stars-balance - balance + transactions\n" +
-                "/gift-test - sendGift\n" +
-                "/premium-gift-test - giftPremiumSubscription\n" +
-                "/channel-subscription-init - create subscription link\n" +
-                "/business-story-test - postStory\n" +
-                "/business-checklist-test - sendChecklist\n" +
-                "/business-gifts-test - getBusinessAccountGifts\n" +
+                "/menubutton_init - menu button\n" +
+                "/paid_media_test - sendPaidMedia\n" +
+                "/stars_balance - balance + transactions\n" +
+                "/gift_test - sendGift\n" +
+                "/premium_gift_test - giftPremiumSubscription\n" +
+                "/channel_subscription_init - create subscription link\n" +
+                "/business_story_test - postStory\n" +
+                "/business_checklist_test - sendChecklist\n" +
+                "/business_gifts_test - getBusinessAccountGifts\n" +
                 "Нажми inline-кнопки ниже для inline mode сценариев.",
             inlineKeyboard
         );
     }
 
-    @OnMessage(command = "commands-init")
+    @OnMessage(command = "commands_init")
     public void onCommandsInit(TelegramMessage telegramMessage) {
         telegramApiClient.setMyCommands(
             new SetMyCommandsRequest(
                 List.of(
                     new BotCommand("start", "Stage 3 demo menu"),
                     new BotCommand("startform", "Start FSM form"),
-                    new BotCommand("buy-test", "Send demo invoice"),
+                    new BotCommand("buy_test", "Send demo invoice"),
                     new BotCommand("webapp", "Send web app keyboard"),
-                    new BotCommand("prepared-inline-test", "Create prepared inline message"),
+                    new BotCommand("prepared_inline_test", "Create prepared inline message"),
                     new BotCommand("albumtest", "Send media group album"),
-                    new BotCommand("menubutton-init", "Configure chat menu button")
+                    new BotCommand("menubutton_init", "Configure chat menu button")
                 ),
                 null,
                 null
@@ -143,7 +143,7 @@ public class Stage3DemoController {
         telegramMessage.reply("Команды зарегистрированы.");
     }
 
-    @OnMessage(command = "buy-test")
+    @OnMessage(command = "buy_test")
     public void onBuyTest(Message message, TelegramMessage telegramMessage) {
         boolean starsMode = Boolean.parseBoolean(System.getenv("DEMO_STARS_MODE"));
         String providerToken = System.getenv("PAYMENT_PROVIDER_TOKEN");
@@ -169,7 +169,7 @@ public class Stage3DemoController {
             prices,
             null,
             null,
-            "buy-test",
+            "buy_test",
             null,
             null,
             null,
@@ -228,11 +228,11 @@ public class Stage3DemoController {
         }
     }
 
-    @OnMessage(command = "paid-media-test")
+    @OnMessage(command = "paid_media_test")
     public void onPaidMediaTest(Message message, TelegramMessage telegramMessage) {
         String fileId = System.getenv("DEMO_PAID_MEDIA_FILE_ID");
         if (!StringUtils.hasText(fileId)) {
-            telegramMessage.reply("Укажи DEMO_PAID_MEDIA_FILE_ID (photo/video file_id) для /paid-media-test.");
+            telegramMessage.reply("Укажи DEMO_PAID_MEDIA_FILE_ID (photo/video file_id) для /paid_media_test.");
             return;
         }
         int starCount = parseIntEnv("DEMO_PAID_MEDIA_STAR_COUNT", 1);
@@ -259,7 +259,7 @@ public class Stage3DemoController {
         telegramMessage.reply("Paid media отправлено. type=" + (type == null ? "photo" : type) + ", stars=" + starCount);
     }
 
-    @OnMessage(command = "stars-balance")
+    @OnMessage(command = "stars_balance")
     public void onStarsBalance(TelegramMessage telegramMessage) {
         var balance = monetizationOperations.getMyStarBalance();
         var transactions = monetizationOperations.getStarTransactions(new GetStarTransactionsRequest(null, 5));
@@ -271,11 +271,11 @@ public class Stage3DemoController {
         );
     }
 
-    @OnMessage(command = "gift-test")
+    @OnMessage(command = "gift_test")
     public void onGiftTest(Message message, TelegramMessage telegramMessage) {
         String giftId = System.getenv("DEMO_GIFT_ID");
         if (!StringUtils.hasText(giftId)) {
-            telegramMessage.reply("Укажи DEMO_GIFT_ID для /gift-test.");
+            telegramMessage.reply("Укажи DEMO_GIFT_ID для /gift_test.");
             return;
         }
         Long targetUserId = message.from() != null ? message.from().id() : null;
@@ -287,7 +287,7 @@ public class Stage3DemoController {
         telegramMessage.reply("Gift отправлен пользователю " + targetUserId + ".");
     }
 
-    @OnMessage(command = "premium-gift-test")
+    @OnMessage(command = "premium_gift_test")
     public void onPremiumGiftTest(Message message, TelegramMessage telegramMessage) {
         Long targetUserId = message.from() != null ? message.from().id() : null;
         if (targetUserId == null) {
@@ -302,11 +302,11 @@ public class Stage3DemoController {
         telegramMessage.reply("Premium подарен: months=" + monthCount + ", stars=" + starCount + ".");
     }
 
-    @OnMessage(command = "channel-subscription-init")
+    @OnMessage(command = "channel_subscription_init")
     public void onChannelSubscriptionInit(TelegramMessage telegramMessage) {
         String chatIdRaw = System.getenv("DEMO_CHANNEL_CHAT_ID");
         if (!StringUtils.hasText(chatIdRaw)) {
-            telegramMessage.reply("Укажи DEMO_CHANNEL_CHAT_ID (например @channelusername) для /channel-subscription-init.");
+            telegramMessage.reply("Укажи DEMO_CHANNEL_CHAT_ID (например @channelusername) для /channel_subscription_init.");
             return;
         }
         Object chatId = parseChatId(chatIdRaw);
@@ -321,12 +321,12 @@ public class Stage3DemoController {
         telegramMessage.reply("Subscription invite link: " + link.inviteLink());
     }
 
-    @OnMessage(command = "business-story-test")
+    @OnMessage(command = "business_story_test")
     public void onBusinessStoryTest(TelegramMessage telegramMessage) {
         String businessConnectionId = System.getenv("DEMO_BUSINESS_CONNECTION_ID");
         String storyPhotoFileId = System.getenv("DEMO_BUSINESS_STORY_FILE_ID");
         if (!StringUtils.hasText(businessConnectionId) || !StringUtils.hasText(storyPhotoFileId)) {
-            telegramMessage.reply("Укажи DEMO_BUSINESS_CONNECTION_ID и DEMO_BUSINESS_STORY_FILE_ID для /business-story-test.");
+            telegramMessage.reply("Укажи DEMO_BUSINESS_CONNECTION_ID и DEMO_BUSINESS_STORY_FILE_ID для /business_story_test.");
             return;
         }
         var story = businessOperations.postStory(
@@ -345,11 +345,11 @@ public class Stage3DemoController {
         telegramMessage.reply("Business story posted. id=" + story.id());
     }
 
-    @OnMessage(command = "business-checklist-test")
+    @OnMessage(command = "business_checklist_test")
     public void onBusinessChecklistTest(Message message, TelegramMessage telegramMessage) {
         String businessConnectionId = System.getenv("DEMO_BUSINESS_CONNECTION_ID");
         if (!StringUtils.hasText(businessConnectionId)) {
-            telegramMessage.reply("Укажи DEMO_BUSINESS_CONNECTION_ID для /business-checklist-test.");
+            telegramMessage.reply("Укажи DEMO_BUSINESS_CONNECTION_ID для /business_checklist_test.");
             return;
         }
         var checklist = new ru.tardyon.botframework.telegram.api.model.checklist.InputChecklist(
@@ -378,11 +378,11 @@ public class Stage3DemoController {
         telegramMessage.reply("Business checklist отправлен.");
     }
 
-    @OnMessage(command = "business-gifts-test")
+    @OnMessage(command = "business_gifts_test")
     public void onBusinessGiftsTest(TelegramMessage telegramMessage) {
         String businessConnectionId = System.getenv("DEMO_BUSINESS_CONNECTION_ID");
         if (!StringUtils.hasText(businessConnectionId)) {
-            telegramMessage.reply("Укажи DEMO_BUSINESS_CONNECTION_ID для /business-gifts-test.");
+            telegramMessage.reply("Укажи DEMO_BUSINESS_CONNECTION_ID для /business_gifts_test.");
             return;
         }
         var gifts = businessOperations.getBusinessAccountGifts(
@@ -457,7 +457,7 @@ public class Stage3DemoController {
         );
     }
 
-    @OnMessage(command = "menubutton-init")
+    @OnMessage(command = "menubutton_init")
     public void onMenuButtonInit(Message message, TelegramMessage telegramMessage) {
         telegramApiClient.setChatMenuButton(
             new SetChatMenuButtonRequest(
@@ -484,7 +484,7 @@ public class Stage3DemoController {
         );
     }
 
-    @OnMessage(command = "prepared-inline-test")
+    @OnMessage(command = "prepared_inline_test")
     public void onPreparedInlineTest(Message message, TelegramMessage telegramMessage) {
         if (message.from() == null) {
             telegramMessage.reply("Не удалось определить user id для savePreparedInlineMessage.");

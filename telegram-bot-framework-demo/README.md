@@ -5,15 +5,15 @@ Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 6 t
 ## What demo shows
 
 - Stage 5 monetization commands:
-  - `/paid-media-test` -> `sendPaidMedia`
-  - `/stars-balance` -> `getMyStarBalance` + `getStarTransactions`
-  - `/gift-test` -> `sendGift`
-  - `/premium-gift-test` -> `giftPremiumSubscription`
-  - `/channel-subscription-init` -> `createChatSubscriptionInviteLink`
+  - `/paid_media_test` -> `sendPaidMedia`
+  - `/stars_balance` -> `getMyStarBalance` + `getStarTransactions`
+  - `/gift_test` -> `sendGift`
+  - `/premium_gift_test` -> `giftPremiumSubscription`
+  - `/channel_subscription_init` -> `createChatSubscriptionInviteLink`
 - Stage 5 business commands:
-  - `/business-story-test` -> `postStory`
-  - `/business-checklist-test` -> `sendChecklist`
-  - `/business-gifts-test` -> `getBusinessAccountGifts`
+  - `/business_story_test` -> `postStory`
+  - `/business_checklist_test` -> `sendChecklist`
+  - `/business_gifts_test` -> `getBusinessAccountGifts`
 - Stage 5 annotation handlers for service messages:
   - `@OnMessage(giftPresent = true)`
   - `@OnBusinessMessage(refundedPaymentPresent = true)`
@@ -30,7 +30,7 @@ Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 6 t
   - FSM `/startform`
   - callback `menu:*`
   - inline mode examples
-  - invoice `/buy-test`
+  - invoice `/buy_test`
   - web app `/webapp`
   - media group `/albumtest`
 
