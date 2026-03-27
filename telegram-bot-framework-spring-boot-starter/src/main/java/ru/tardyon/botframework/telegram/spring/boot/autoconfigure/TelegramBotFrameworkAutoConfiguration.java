@@ -49,6 +49,8 @@ import ru.tardyon.botframework.telegram.spring.boot.service.TelegramMonetization
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramScreenAnnotationRegistrar;
+import ru.tardyon.botframework.telegram.spring.boot.widget.AnnotatedWidgetRegistry;
+import ru.tardyon.botframework.telegram.spring.boot.widget.TelegramWidgetAnnotationRegistrar;
 import ru.tardyon.botframework.telegram.webhook.DefaultWebhookUpdateProcessor;
 import ru.tardyon.botframework.telegram.webhook.WebhookUpdateProcessor;
 import ru.tardyon.botframework.telegram.webapp.WebAppInitDataValidator;
@@ -281,6 +283,21 @@ public class TelegramBotFrameworkAutoConfiguration {
             buildBotId(telegramApiClient),
             diagnosticsHooks
         );
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public AnnotatedWidgetRegistry annotatedWidgetRegistry() {
+        return new AnnotatedWidgetRegistry();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TelegramWidgetAnnotationRegistrar telegramWidgetAnnotationRegistrar(
+        AnnotatedWidgetRegistry annotatedWidgetRegistry,
+        ListableBeanFactory beanFactory
+    ) {
+        return new TelegramWidgetAnnotationRegistrar(annotatedWidgetRegistry, beanFactory);
     }
 
     @Bean

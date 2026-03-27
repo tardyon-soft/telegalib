@@ -29,6 +29,8 @@ import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotatio
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramScreenAnnotationRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramBusinessOperations;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramMonetizationOperations;
+import ru.tardyon.botframework.telegram.spring.boot.widget.AnnotatedWidgetRegistry;
+import ru.tardyon.botframework.telegram.spring.boot.widget.TelegramWidgetAnnotationRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
 import ru.tardyon.botframework.telegram.webhook.WebhookUpdateProcessor;
 import ru.tardyon.botframework.telegram.webapp.WebAppInitDataValidator;
@@ -57,6 +59,8 @@ class TelegramBotFrameworkAutoConfigurationTest {
                 assertThat(context).hasSingleBean(Dispatcher.class);
                 assertThat(context).hasSingleBean(TelegramAnnotationHandlerRegistrar.class);
                 assertThat(context).hasSingleBean(TelegramScreenAnnotationRegistrar.class);
+                assertThat(context).hasSingleBean(AnnotatedWidgetRegistry.class);
+                assertThat(context).hasSingleBean(TelegramWidgetAnnotationRegistrar.class);
                 assertThat(context).hasSingleBean(TelegramBot.class);
                 assertThat(context).hasSingleBean(TelegramBotLifecycle.class);
                 assertThat(context).hasSingleBean(WebhookUpdateProcessor.class);

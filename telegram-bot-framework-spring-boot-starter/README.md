@@ -23,6 +23,8 @@ Thin Spring Boot integration layer over `telegram-bot-framework-core`.
 - `ScreenEngine`
 - `ScreenMiddleware`
 - `TelegramScreenAnnotationRegistrar`
+- `AnnotatedWidgetRegistry`
+- `TelegramWidgetAnnotationRegistrar`
 
 ## Polling mode (`application.yml`)
 
@@ -182,6 +184,28 @@ class DemoScreens {
     @OnScreenCallback(screen = "settings", callbackEquals = "screen:nav:back")
     public ScreenAction back() {
         return ScreenAction.back();
+    }
+}
+```
+
+## Widget annotations (for screen composition)
+
+```java
+@WidgetController
+class CatalogWidgets {
+
+    @Widget(id = "items_list")
+    WidgetView items(List<Item> items) {
+        return WidgetView.builder()
+            .line("Items")
+            .replyMarkup(WidgetButtons.objectList("items_list", "open", items, Item::title, Item::id))
+            .build();
+    }
+
+    @OnWidgetAction(widget = "items_list", action = "open")
+    ScreenAction open(ScreenContext context, String payload) {
+        context.screenState().putData("selected_item_id", payload);
+        return ScreenAction.push("item_details");
     }
 }
 ```

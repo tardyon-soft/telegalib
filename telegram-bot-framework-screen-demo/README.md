@@ -9,12 +9,15 @@
 - композицию экрана из виджетов;
 - разделение `user state` и `screen state`.
 - annotation-driven screen API (`@ScreenController`, `@Screen`, `@OnScreenMessage`, `@OnScreenCallback`).
+- annotation-driven widget API (`@WidgetController`, `@Widget`, `@OnWidgetAction`).
 
 ## Команды
 
 - `/screen_start` — открыть экран HOME;
 - `/user_state_set` — записать `preferred_theme` в user state;
 - `/user_state_show` — показать значение из user state.
+- в HOME есть переход на экран `catalog_list`, где список объектов строится виджетом;
+- нажатие на объект открывает `catalog_details`.
 
 ## Запуск
 
@@ -31,3 +34,4 @@ BOT_TOKEN=<your_token> ./gradlew :telegram-bot-framework-screen-demo:bootRun
 Экраны и переходы описаны в:
 - `ScreenDemoScreensController` (аннотации screen API)
 - `ScreenDemoRoutesController` (обычные команды для user state)
+- `ScreenDemoWidgetsController` (виджеты и widget-actions)
