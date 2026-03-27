@@ -33,6 +33,7 @@ import ru.tardyon.botframework.telegram.api.method.SendMediaGroupRequest;
 import ru.tardyon.botframework.telegram.api.model.TelegramFile;
 import ru.tardyon.botframework.telegram.api.model.media.InputMediaDocument;
 import ru.tardyon.botframework.telegram.api.model.media.InputMediaPhoto;
+import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile;
 
 class DefaultTelegramApiClientFileSupportTest {
 
@@ -103,6 +104,27 @@ class DefaultTelegramApiClientFileSupportTest {
     }
 
     @Test
+    void localModeWithAbsolutePathUsesFileUriReferenceWithoutMultipart(@TempDir Path tempDir) throws Exception {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okMessageResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient(
+            "token",
+            BotApiTransportProfile.local("http://127.0.0.1:8081"),
+            httpClient,
+            objectMapper
+        );
+        Path localFile = tempDir.resolve("local-document.txt");
+        Files.writeString(localFile, "local-file");
+
+        client.sendDocument(SendDocumentRequest.of(123L, InputFile.path(localFile)));
+
+        HttpRequest request = httpClient.lastRequest();
+        String contentType = request.headers().firstValue("Content-Type").orElse("");
+        assertTrue(contentType.startsWith("application/json"));
+        String jsonBody = new String(readBody(request), StandardCharsets.UTF_8);
+        assertTrue(jsonBody.contains("\"document\":\"" + localFile.toUri() + "\""));
+    }
+
+    @Test
     void sendMediaGroupByFileIdsUsesJson() {
         RecordingHttpClient httpClient = new RecordingHttpClient(okMessageArrayResponse());
         DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
@@ -164,6 +186,40 @@ class DefaultTelegramApiClientFileSupportTest {
 
         assertEquals("https://api.telegram.org/file/bottoken/documents/report.pdf", url);
         assertArrayEquals("binary-content".getBytes(StandardCharsets.UTF_8), content);
+    }
+
+    @Test
+    void localModeBuildFileDownloadUrlReturnsFileUriForAbsolutePath(@TempDir Path tempDir) {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okMessageResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient(
+            "token",
+            BotApiTransportProfile.local("http://127.0.0.1:8081"),
+            httpClient,
+            objectMapper
+        );
+        Path localFile = tempDir.resolve("absolute.bin");
+
+        String url = client.buildFileDownloadUrl(localFile.toString());
+
+        assertEquals(localFile.toUri().toString(), url);
+    }
+
+    @Test
+    void localModeDownloadFileReadsAbsoluteLocalPath(@TempDir Path tempDir) throws Exception {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okMessageResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient(
+            "token",
+            BotApiTransportProfile.local("http://127.0.0.1:8081"),
+            httpClient,
+            objectMapper
+        );
+        Path localFile = tempDir.resolve("from-local-server.bin");
+        byte[] expected = "local-binary".getBytes(StandardCharsets.UTF_8);
+        Files.write(localFile, expected);
+
+        byte[] actual = client.downloadFile(localFile.toString());
+
+        assertArrayEquals(expected, actual);
     }
 
     @Test

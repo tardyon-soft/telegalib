@@ -96,32 +96,43 @@ import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
 import ru.tardyon.botframework.telegram.api.transport.MultipartFormData;
 import ru.tardyon.botframework.telegram.api.transport.TelegramApiResponse;
+import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode;
+import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile;
 import ru.tardyon.botframework.telegram.exception.TelegramApiException;
 
 public class DefaultTelegramApiClient implements TelegramApiClient {
 
-    private static final String DEFAULT_BASE_URL = "https://api.telegram.org";
     private static final String APPLICATION_JSON = "application/json; charset=UTF-8";
 
     private final String botToken;
+    private final BotApiTransportProfile transportProfile;
     private final String baseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
 
     public DefaultTelegramApiClient(String botToken) {
-        this(botToken, DEFAULT_BASE_URL, HttpClient.newHttpClient(), new ObjectMapper());
+        this(botToken, BotApiTransportProfile.cloudDefault(), HttpClient.newHttpClient(), new ObjectMapper());
     }
 
     public DefaultTelegramApiClient(String botToken, HttpClient httpClient, ObjectMapper objectMapper) {
-        this(botToken, DEFAULT_BASE_URL, httpClient, objectMapper);
+        this(botToken, BotApiTransportProfile.cloudDefault(), httpClient, objectMapper);
     }
 
-    public DefaultTelegramApiClient(String botToken, String baseUrl, HttpClient httpClient, ObjectMapper objectMapper) {
+    public DefaultTelegramApiClient(String botToken, BotApiTransportProfile transportProfile) {
+        this(botToken, transportProfile, HttpClient.newHttpClient(), new ObjectMapper());
+    }
+
+    public DefaultTelegramApiClient(String botToken, BotApiTransportProfile transportProfile, HttpClient httpClient, ObjectMapper objectMapper) {
         this.botToken = Objects.requireNonNull(botToken, "botToken must not be null");
-        this.baseUrl = Objects.requireNonNull(baseUrl, "baseUrl must not be null");
+        this.transportProfile = Objects.requireNonNull(transportProfile, "transportProfile must not be null");
+        this.baseUrl = transportProfile.baseUrl();
         this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null").copy();
         this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+    }
+
+    public DefaultTelegramApiClient(String botToken, String baseUrl, HttpClient httpClient, ObjectMapper objectMapper) {
+        this(botToken, BotApiTransportProfile.cloud(baseUrl), httpClient, objectMapper);
     }
 
     @Override
@@ -194,7 +205,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     @Override
     public Message sendPaidMedia(SendPaidMediaRequest request) {
         SendPaidMediaRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
-        boolean hasUpload = actualRequest.media().stream().map(InputPaidMedia::media).anyMatch(InputFile::isUpload);
+        boolean hasUpload = actualRequest.media().stream().map(InputPaidMedia::media).anyMatch(this::requiresMultipartUpload);
 
         if (!hasUpload) {
             SendPaidMediaJsonPayload payload = new SendPaidMediaJsonPayload(
@@ -420,12 +431,12 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     public Message sendDocument(SendDocumentRequest request) {
         SendDocumentRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
         InputFile inputFile = actualRequest.document();
-
-        if (inputFile instanceof InputFileReference reference) {
+        String documentReference = tryResolveStringReference(inputFile);
+        if (documentReference != null) {
             SendDocumentJsonPayload jsonPayload = new SendDocumentJsonPayload(
                 actualRequest.chatId(),
                 actualRequest.businessConnectionId(),
-                reference.value(),
+                documentReference,
                 actualRequest.caption(),
                 actualRequest.replyMarkup()
             );
@@ -439,7 +450,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     public List<Message> sendMediaGroup(SendMediaGroupRequest request) {
         SendMediaGroupRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
 
-        boolean hasUpload = actualRequest.media().stream().map(InputMedia::media).anyMatch(InputFile::isUpload);
+        boolean hasUpload = actualRequest.media().stream().map(InputMedia::media).anyMatch(this::requiresMultipartUpload);
         JavaType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, Message.class);
 
         if (!hasUpload) {
@@ -459,6 +470,9 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     @Override
     public String buildFileDownloadUrl(String filePath) {
         String actualFilePath = requireText(filePath, "filePath");
+        if (isLocalMode() && isAbsoluteLocalPath(actualFilePath)) {
+            return Path.of(actualFilePath).toUri().toString();
+        }
         String normalizedPath = actualFilePath.startsWith("/") ? actualFilePath.substring(1) : actualFilePath;
         return baseUrl + "/file/bot" + botToken + "/" + normalizedPath;
     }
@@ -467,7 +481,11 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     public byte[] downloadFile(String filePath) {
         String rawBody = null;
         try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(buildFileDownloadUrl(filePath)))
+            String source = buildFileDownloadUrl(filePath);
+            if (source.startsWith("file:")) {
+                return Files.readAllBytes(Path.of(URI.create(source)));
+            }
+            HttpRequest request = HttpRequest.newBuilder(URI.create(source))
                 .GET()
                 .build();
             HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
@@ -682,8 +700,9 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
 
     private StoryContentPayload toStoryContentPayload(InputStoryContent content, MultipartFormData multipart) {
         InputFile media = content.media();
-        if (media instanceof InputFileReference reference) {
-            return new StoryContentPayload(content.type(), reference.value(), null, null, null);
+        String mediaReference = tryResolveStringReference(media);
+        if (mediaReference != null) {
+            return new StoryContentPayload(content.type(), mediaReference, null, null, null);
         }
         String attachName = "storymedia";
         try {
@@ -700,7 +719,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     private SendMediaGroupItemPayload toMediaPayloadWithReference(InputMedia inputMedia) {
         return new SendMediaGroupItemPayload(
             inputMedia.type(),
-            inputMedia.media().asReference(),
+            Objects.requireNonNull(tryResolveStringReference(inputMedia.media()), "media must be a string reference"),
             inputMedia.caption(),
             inputMedia.parseMode(),
             inputMedia.captionEntities()
@@ -713,10 +732,11 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         AtomicInteger counter
     ) {
         InputFile mediaFile = inputMedia.media();
-        if (mediaFile instanceof InputFileReference reference) {
+        String mediaReference = tryResolveStringReference(mediaFile);
+        if (mediaReference != null) {
             return new SendMediaGroupItemPayload(
                 inputMedia.type(),
-                reference.value(),
+                mediaReference,
                 inputMedia.caption(),
                 inputMedia.parseMode(),
                 inputMedia.captionEntities()
@@ -742,7 +762,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     private SendPaidMediaItemPayload toPaidMediaPayloadWithReference(InputPaidMedia inputPaidMedia) {
         return new SendPaidMediaItemPayload(
             inputPaidMedia.type(),
-            inputPaidMedia.media().asReference()
+            Objects.requireNonNull(tryResolveStringReference(inputPaidMedia.media()), "media must be a string reference")
         );
     }
 
@@ -752,8 +772,9 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         AtomicInteger counter
     ) {
         InputFile mediaFile = inputPaidMedia.media();
-        if (mediaFile instanceof InputFileReference reference) {
-            return new SendPaidMediaItemPayload(inputPaidMedia.type(), reference.value());
+        String mediaReference = tryResolveStringReference(mediaFile);
+        if (mediaReference != null) {
+            return new SendPaidMediaItemPayload(inputPaidMedia.type(), mediaReference);
         }
         String attachName = "paidmedia" + counter.incrementAndGet();
         try {
@@ -843,6 +864,41 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
 
     private URI buildMethodUri(String methodName) {
         return URI.create(baseUrl + "/bot" + botToken + "/" + methodName);
+    }
+
+    private boolean requiresMultipartUpload(InputFile inputFile) {
+        if (inputFile instanceof InputFileBytes || inputFile instanceof InputFileStream) {
+            return true;
+        }
+        if (inputFile instanceof InputFilePath inputFilePath) {
+            return !(isLocalMode() && transportProfile.localFileUriUploadEnabled() && inputFilePath.path().isAbsolute());
+        }
+        return false;
+    }
+
+    private String tryResolveStringReference(InputFile inputFile) {
+        if (inputFile instanceof InputFileReference reference) {
+            return reference.value();
+        }
+        if (inputFile instanceof InputFilePath inputFilePath
+            && isLocalMode()
+            && transportProfile.localFileUriUploadEnabled()
+            && inputFilePath.path().isAbsolute()) {
+            return inputFilePath.path().toUri().toString();
+        }
+        return null;
+    }
+
+    private boolean isLocalMode() {
+        return transportProfile.mode() == BotApiTransportMode.LOCAL;
+    }
+
+    private static boolean isAbsoluteLocalPath(String filePath) {
+        try {
+            return Path.of(filePath).isAbsolute();
+        } catch (RuntimeException ex) {
+            return false;
+        }
     }
 
     private static String requireText(String value, String fieldName) {

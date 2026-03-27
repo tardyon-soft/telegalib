@@ -87,3 +87,43 @@ The layer is explicit and manual:
 - no network auto-detection
 - no runtime permission engine
 - only declared version or manually configured capability profile
+
+## Transport Profiles (Stage 6 Scaffold)
+
+Core transport profile types:
+- `ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode`
+  - `CLOUD`
+  - `LOCAL`
+- `ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile`
+
+Cloud mode example:
+
+```java
+var client = new DefaultTelegramApiClient(
+    System.getenv("BOT_TOKEN"),
+    BotApiTransportProfile.cloudDefault()
+);
+```
+
+Local Bot API mode example:
+
+```java
+var client = new DefaultTelegramApiClient(
+    System.getenv("BOT_TOKEN"),
+    BotApiTransportProfile.local("http://127.0.0.1:8081")
+);
+```
+
+Local mode path upload example (compatible with Bot API local server `file://` support):
+
+```java
+client.sendDocument(SendDocumentRequest.of(123L, InputFile.path(Path.of("/absolute/path/report.pdf"))));
+```
+
+Notes:
+- Default mode remains cloud (`https://api.telegram.org`).
+- Local mode is transport/profile support only; runtime API remains the same.
+- According to official Bot API local server notes, local mode can use:
+  - local file paths via `file://` URI semantics for uploads,
+  - webhook over HTTP,
+  - local IP addresses and arbitrary ports for webhook endpoint.
