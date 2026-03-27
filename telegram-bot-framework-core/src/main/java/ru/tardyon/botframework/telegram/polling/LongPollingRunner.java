@@ -80,7 +80,6 @@ public class LongPollingRunner {
 
         running.set(true);
         Thread thread = new Thread(() -> runLoop(dispatcher), "telegram-long-polling-runner");
-        thread.setDaemon(true);
         pollingThread = thread;
         thread.start();
     }
