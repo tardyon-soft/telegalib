@@ -9,4 +9,7 @@ dependencies {
 
     testImplementation(platform("org.junit:junit-bom:5.11.3"))
     testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("org.springframework.boot:spring-boot-starter-test:3.3.5")
+    testImplementation(project(":telegram-bot-framework-testkit"))
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }

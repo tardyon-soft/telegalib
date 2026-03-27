@@ -2,6 +2,12 @@ telegram:
   bot:
     token: ${BOT_TOKEN}
     mode: polling
+    transport:
+      mode: cloud
+      base-url: https://api.telegram.org
+      local-file-uri-upload-enabled: true
+    diagnostics:
+      enabled: true
     polling:
       enabled: true
       timeout: 30
@@ -76,6 +82,8 @@ telegram:
       drop-pending-updates: true
 
 demo:
+  diagnostics:
+    enabled: false
   stage5:
     paid-media:
       file-id: ${DEMO_PAID_MEDIA_FILE_ID:}
@@ -91,3 +99,58 @@ demo:
     business:
       connection-id: ${DEMO_BUSINESS_CONNECTION_ID:}
       story-file-id: ${DEMO_BUSINESS_STORY_FILE_ID:}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: cloud
+
+telegram:
+  bot:
+    transport:
+      mode: cloud
+      base-url: ${DEMO_CLOUD_BOTAPI_BASE_URL:https://api.telegram.org}
+
+demo:
+  diagnostics:
+    enabled: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+telegram:
+  bot:
+    transport:
+      mode: local
+      base-url: ${DEMO_LOCAL_BOTAPI_BASE_URL:http://127.0.0.1:8081}
+      local-file-uri-upload-enabled: true
+
+demo:
+  diagnostics:
+    enabled: true
+
+---
+spring:
+  config:
+    activate:
+      on-profile: fake
+
+telegram:
+  bot:
+    mode: polling
+    transport:
+      mode: local
+      base-url: ${DEMO_FAKE_BOTAPI_BASE_URL:http://127.0.0.1:18081}
+      local-file-uri-upload-enabled: true
+    polling:
+      enabled: false
+    webhook:
+      enabled: false
+
+demo:
+  diagnostics:
+    enabled: true

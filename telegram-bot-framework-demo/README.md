@@ -1,6 +1,6 @@
 # telegram-bot-framework-demo
 
-Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 5 scenarios using annotation-driven API.
+Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 6 transport/diagnostics/test maturity on top of Stage 5 scenarios.
 
 ## What demo shows
 
@@ -17,6 +17,15 @@ Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 5 s
 - Stage 5 annotation handlers for service messages:
   - `@OnMessage(giftPresent = true)`
   - `@OnBusinessMessage(refundedPaymentPresent = true)`
+- Stage 6 transport profile switching:
+  - `cloud` transport profile
+  - `local` Bot API transport profile
+  - `fake` mode profile for testkit-driven runs
+- Stage 6 diagnostics listener wiring:
+  - demo `BotApiRequestListener`
+  - demo `BotApiResponseListener`
+  - demo `UpdateProcessingListener`
+  - demo `ErrorListener`
 - Stage 3/4 compatibility scenarios are kept:
   - FSM `/startform`
   - callback `menu:*`
@@ -50,6 +59,12 @@ Optional for polling/webhook:
 - `BOT_WEBHOOK_PUBLIC_URL`
 - `BOT_WEBHOOK_SECRET_TOKEN`
 
+Optional for transport profile demos:
+
+- `DEMO_CLOUD_BOTAPI_BASE_URL` (default `https://api.telegram.org`)
+- `DEMO_LOCAL_BOTAPI_BASE_URL` (default `http://127.0.0.1:8081`)
+- `DEMO_FAKE_BOTAPI_BASE_URL` (default `http://127.0.0.1:18081`)
+
 Optional for Stage 4 compatibility:
 
 - `PAYMENT_PROVIDER_TOKEN`
@@ -82,21 +97,55 @@ Optional for `/albumtest`:
 
 ```bash
 export BOT_TOKEN=123456:ABCDEF
-./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling'
+./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling,cloud'
 ```
 
-## Run demo (webhook)
+## Run demo (polling + local Bot API)
+
+```bash
+export BOT_TOKEN=123456:ABCDEF
+export DEMO_LOCAL_BOTAPI_BASE_URL=http://127.0.0.1:8081
+./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling,local'
+```
+
+## Run demo (webhook + cloud transport)
 
 ```bash
 export BOT_TOKEN=123456:ABCDEF
 export BOT_WEBHOOK_PUBLIC_URL=https://example.com
 export BOT_WEBHOOK_SECRET_TOKEN=super-secret
-./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=webhook'
+./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=webhook,cloud'
 ```
 
 Default webhook endpoint path: `/telegram/webhook`.
+
+## Run demo in fake testkit mode (dev/test)
+
+This mode is for local verification, not production runtime.  
+`testkit` is used only in `testImplementation`.
+
+```bash
+./gradlew :telegram-bot-framework-demo:test --tests '*DemoFakeModeIntegrationTest'
+```
+
+The test starts an embedded `FakeBotApiServer`, points the demo context to it via `telegram.bot.transport.base-url`, and asserts outgoing Bot API requests.
+
+## Diagnostics listener demo
+
+Enable demo diagnostics listeners:
+
+```yaml
+demo:
+  diagnostics:
+    enabled: true
+```
+
+Listeners are regular Spring beans in:
+- `/Users/sergej/Documents/telegalib/telegram-bot-framework-demo/src/main/java/ru/tardyon/botframework/telegram/demo/config/DemoDiagnosticsConfiguration.java`
 
 ## Notes
 
 - Demo stays as usage example only; runtime logic remains in `core` and `starter`.
 - No DB/Redis/Docker/MTProto/production billing logic is included.
+- Demo does not depend on `botapi-generator`.
+- `testkit` is not part of demo production runtime classpath.
