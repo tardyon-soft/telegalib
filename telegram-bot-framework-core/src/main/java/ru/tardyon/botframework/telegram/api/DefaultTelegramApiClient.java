@@ -62,6 +62,7 @@ import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMediaGroupRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.SendPhotoRequest;
 import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.TransferBusinessAccountStarsRequest;
 import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
@@ -463,6 +464,24 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     @Override
+    public Message sendPhoto(SendPhotoRequest request) {
+        SendPhotoRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
+        InputFile inputFile = actualRequest.photo();
+        String photoReference = tryResolveStringReference(inputFile);
+        if (photoReference != null) {
+            SendPhotoJsonPayload jsonPayload = new SendPhotoJsonPayload(
+                actualRequest.chatId(),
+                actualRequest.businessConnectionId(),
+                photoReference,
+                actualRequest.caption(),
+                actualRequest.replyMarkup()
+            );
+            return invoke("sendPhoto", jsonPayload, objectMapper.getTypeFactory().constructType(Message.class));
+        }
+        return sendPhotoMultipart(actualRequest, inputFile);
+    }
+
+    @Override
     public List<Message> sendMediaGroup(SendMediaGroupRequest request) {
         SendMediaGroupRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
 
@@ -640,6 +659,28 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             return invokeMultipart("sendDocument", builtMultipart, objectMapper.getTypeFactory().constructType(Message.class));
         } catch (IOException e) {
             throw new TelegramApiException(null, "I/O error while preparing multipart sendDocument request", null, e);
+        }
+    }
+
+    private Message sendPhotoMultipart(SendPhotoRequest request, InputFile inputFile) {
+        try {
+            MultipartFormData multipart = new MultipartFormData()
+                .addField("chat_id", String.valueOf(request.chatId()));
+            if (request.businessConnectionId() != null) {
+                multipart.addField("business_connection_id", request.businessConnectionId());
+            }
+            if (request.caption() != null) {
+                multipart.addField("caption", request.caption());
+            }
+            if (request.replyMarkup() != null) {
+                multipart.addField("reply_markup", objectMapper.writeValueAsString(request.replyMarkup()));
+            }
+
+            addInputFilePart(multipart, "photo", inputFile, "photo");
+            MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
+            return invokeMultipart("sendPhoto", builtMultipart, objectMapper.getTypeFactory().constructType(Message.class));
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while preparing multipart sendPhoto request", null, e);
         }
     }
 
@@ -1036,6 +1077,15 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         @JsonProperty("chat_id") Object chatId,
         @JsonProperty("business_connection_id") String businessConnectionId,
         String document,
+        String caption,
+        @JsonProperty("reply_markup") ReplyMarkup replyMarkup
+    ) {
+    }
+
+    private record SendPhotoJsonPayload(
+        @JsonProperty("chat_id") Object chatId,
+        @JsonProperty("business_connection_id") String businessConnectionId,
+        String photo,
         String caption,
         @JsonProperty("reply_markup") ReplyMarkup replyMarkup
     ) {

@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    implementation(project(":telegram-bot-framework-core"))
     implementation(project(":telegram-bot-framework-spring-boot-starter"))
     implementation("org.springframework.boot:spring-boot-starter:3.3.5")
 

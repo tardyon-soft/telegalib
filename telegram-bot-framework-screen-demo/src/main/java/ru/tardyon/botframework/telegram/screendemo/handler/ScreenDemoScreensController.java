@@ -1,6 +1,9 @@
 package ru.tardyon.botframework.telegram.screendemo.handler;
 
 import java.util.List;
+import ru.tardyon.botframework.telegram.api.TelegramApiClient;
+import ru.tardyon.botframework.telegram.api.file.InputFile;
+import ru.tardyon.botframework.telegram.api.method.SendPhotoRequest;
 import ru.tardyon.botframework.telegram.api.model.CallbackQuery;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.markup.InlineKeyboardMarkup;
@@ -30,6 +33,7 @@ public class ScreenDemoScreensController {
     private static final String TOGGLE_NOTIFICATIONS = "screen:screen:toggle_notifications:";
     private static final String HOME_MENU_WIDGET = "home_menu";
     private static final String CHANNELS_LIST_WIDGET = "channels_list";
+    private static final String DETAILS_LAST_PHOTO_CHANNEL_ID = "details_last_photo_channel_id";
 
     private static final List<MenuEntry> HOME_MENU = List.of(
         new MenuEntry("Настройки", SETTINGS_SCREEN),
@@ -175,6 +179,7 @@ public class ScreenDemoScreensController {
                 .line("Канал не найден")
                 .build();
         }
+        renderChannelImage(context, selected);
         return ScreenView.builder()
             .line("Детали канала")
             .line("ID: " + selected.id())
@@ -182,9 +187,38 @@ public class ScreenDemoScreensController {
             .line("Описание: " + selected.description())
             .line("Подписчики: " + selected.subscribers())
             .line("Средние просмотры: " + selected.avgViews())
-            .line("Картинка:")
-            .line(selected.imageUrl())
             .build();
+    }
+
+    private void renderChannelImage(ScreenContext context, ChannelItem selected) {
+        String lastRendered = (String) context.screenState().getData(DETAILS_LAST_PHOTO_CHANNEL_ID).orElse(null);
+        if (selected.id().equals(lastRendered)) {
+            return;
+        }
+
+        TelegramApiClient apiClient = context.updateContext().telegramApiClient();
+        if (apiClient == null) {
+            return;
+        }
+
+        Long chatId = resolveChatId(context);
+        if (chatId == null) {
+            return;
+        }
+
+        apiClient.sendPhoto(SendPhotoRequest.of(chatId, InputFile.url(selected.imageUrl())));
+        context.screenState().putData(DETAILS_LAST_PHOTO_CHANNEL_ID, selected.id());
+    }
+
+    private Long resolveChatId(ScreenContext context) {
+        Message message = context.message();
+        if (message != null && message.chat() != null) {
+            return message.chat().id();
+        }
+        if (context.screenState() != null && context.screenState().key() != null) {
+            return context.screenState().key().chatId();
+        }
+        return null;
     }
 
     @OnScreenMessage(screen = HOME_SCREEN, textEquals = "back")

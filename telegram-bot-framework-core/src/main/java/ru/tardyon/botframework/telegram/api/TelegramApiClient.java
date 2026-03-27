@@ -45,6 +45,7 @@ import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMediaGroupRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.SendPhotoRequest;
 import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.TransferBusinessAccountStarsRequest;
 import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
@@ -166,6 +167,10 @@ public interface TelegramApiClient {
     TelegramFile getFile(GetFileRequest request);
 
     Message sendDocument(SendDocumentRequest request);
+
+    default Message sendPhoto(SendPhotoRequest request) {
+        throw new UnsupportedOperationException("sendPhoto is not implemented by this TelegramApiClient");
+    }
 
     List<Message> sendMediaGroup(SendMediaGroupRequest request);
 
