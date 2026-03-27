@@ -63,7 +63,9 @@ public final class TelegramScreenAnnotationRegistrar implements SmartInitializin
             screenRegistry.register(definition.toScreen());
             if (StringUtils.hasText(definition.startCommand())) {
                 String command = definition.startCommand();
-                router.message(Filters.command(command), (context, message) -> screenEngine.start(context, definition.id()));
+                router.message(message -> Filters.command(command).test(message) || Filters.textEquals(command).test(message),
+                    (context, message) -> screenEngine.start(context, definition.id())
+                );
             }
         }
     }

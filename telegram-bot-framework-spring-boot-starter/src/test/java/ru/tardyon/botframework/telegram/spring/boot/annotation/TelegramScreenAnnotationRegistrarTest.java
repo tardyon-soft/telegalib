@@ -52,6 +52,13 @@ class TelegramScreenAnnotationRegistrarTest {
                     .orElse(null);
                 assertThat(currentAfterStart).isEqualTo("home");
 
+                UpdateContext plainStartContext = new UpdateContext(messageUpdate(1_1L, "screen_start"), null, userStateStorage, "bot-test");
+                router.route(plainStartContext);
+                String currentAfterPlainStart = screenStateStorage.find(new ru.tardyon.botframework.telegram.screen.ScreenKey("bot-test", 200L))
+                    .flatMap(stack -> stack.current().map(ru.tardyon.botframework.telegram.screen.ScreenFrame::screenId))
+                    .orElse(null);
+                assertThat(currentAfterPlainStart).isEqualTo("home");
+
                 UpdateContext settingsContext = new UpdateContext(messageUpdate(2L, "to_settings"), null, userStateStorage, "bot-test");
                 assertThat(screenEngine.handle(settingsContext)).isTrue();
 
