@@ -98,6 +98,10 @@ import ru.tardyon.botframework.telegram.api.transport.MultipartFormData;
 import ru.tardyon.botframework.telegram.api.transport.TelegramApiResponse;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile;
+import ru.tardyon.botframework.telegram.diagnostics.BotApiRequestEvent;
+import ru.tardyon.botframework.telegram.diagnostics.BotApiResponseEvent;
+import ru.tardyon.botframework.telegram.diagnostics.DiagnosticErrorEvent;
+import ru.tardyon.botframework.telegram.diagnostics.DiagnosticsHooks;
 import ru.tardyon.botframework.telegram.exception.TelegramApiException;
 
 public class DefaultTelegramApiClient implements TelegramApiClient {
@@ -109,6 +113,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     private final String baseUrl;
     private final HttpClient httpClient;
     private final ObjectMapper objectMapper;
+    private final DiagnosticsHooks diagnosticsHooks;
 
     public DefaultTelegramApiClient(String botToken) {
         this(botToken, BotApiTransportProfile.cloudDefault(), HttpClient.newHttpClient(), new ObjectMapper());
@@ -119,15 +124,26 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     public DefaultTelegramApiClient(String botToken, BotApiTransportProfile transportProfile) {
-        this(botToken, transportProfile, HttpClient.newHttpClient(), new ObjectMapper());
+        this(botToken, transportProfile, HttpClient.newHttpClient(), new ObjectMapper(), DiagnosticsHooks.noop());
     }
 
     public DefaultTelegramApiClient(String botToken, BotApiTransportProfile transportProfile, HttpClient httpClient, ObjectMapper objectMapper) {
+        this(botToken, transportProfile, httpClient, objectMapper, DiagnosticsHooks.noop());
+    }
+
+    public DefaultTelegramApiClient(
+        String botToken,
+        BotApiTransportProfile transportProfile,
+        HttpClient httpClient,
+        ObjectMapper objectMapper,
+        DiagnosticsHooks diagnosticsHooks
+    ) {
         this.botToken = Objects.requireNonNull(botToken, "botToken must not be null");
         this.transportProfile = Objects.requireNonNull(transportProfile, "transportProfile must not be null");
         this.baseUrl = transportProfile.baseUrl();
         this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null").copy();
+        this.diagnosticsHooks = Objects.requireNonNull(diagnosticsHooks, "diagnosticsHooks must not be null");
         this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
     }
 
@@ -540,22 +556,68 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     private <T> T invoke(String methodName, Object requestBody, JavaType resultType) {
+        String correlationId = diagnosticsHooks.newCorrelationId();
+        long startedNanos = System.nanoTime();
+        long startedMillis = System.currentTimeMillis();
         String rawBody = null;
+        Integer httpStatus = null;
+        Integer telegramErrorCode = null;
+        String telegramDescription = null;
+        RuntimeException failure = null;
+
+        diagnosticsHooks.onApiRequest(new BotApiRequestEvent(
+            correlationId,
+            methodName,
+            startedMillis,
+            diagnosticsHooks.redact(serializeRequestPreview(requestBody))
+        ));
+
         try {
             HttpRequest request = buildRequest(methodName, requestBody);
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            httpStatus = response.statusCode();
             rawBody = response.body();
             TelegramApiResponse<T> envelope = parseApiResponse(rawBody, resultType, objectMapper);
 
             if (!Boolean.TRUE.equals(envelope.ok())) {
-                throw new TelegramApiException(envelope.errorCode(), envelope.description(), rawBody);
+                telegramErrorCode = envelope.errorCode();
+                telegramDescription = envelope.description();
+                failure = new TelegramApiException(envelope.errorCode(), envelope.description(), rawBody);
+                throw failure;
             }
             return envelope.result();
         } catch (IOException e) {
-            throw new TelegramApiException(null, "I/O error while calling Telegram Bot API", rawBody, e);
+            failure = new TelegramApiException(null, "I/O error while calling Telegram Bot API", rawBody, e);
+            throw failure;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new TelegramApiException(null, "Interrupted while calling Telegram Bot API", rawBody, e);
+            failure = new TelegramApiException(null, "Interrupted while calling Telegram Bot API", rawBody, e);
+            throw failure;
+        } catch (RuntimeException e) {
+            failure = e;
+            throw e;
+        } finally {
+            long durationMillis = nanosToMillis(startedNanos);
+            diagnosticsHooks.onApiResponse(new BotApiResponseEvent(
+                correlationId,
+                methodName,
+                durationMillis,
+                failure == null,
+                httpStatus,
+                telegramErrorCode,
+                telegramDescription,
+                diagnosticsHooks.redact(rawBody)
+            ));
+            if (failure != null) {
+                diagnosticsHooks.onError(new DiagnosticErrorEvent(
+                    correlationId,
+                    "api-client",
+                    "invoke",
+                    null,
+                    methodName,
+                    failure
+                ));
+            }
         }
     }
 
@@ -825,7 +887,22 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     private <T> T invokeMultipart(String methodName, MultipartFormData.BuiltMultipart multipart, JavaType resultType) {
+        String correlationId = diagnosticsHooks.newCorrelationId();
+        long startedNanos = System.nanoTime();
+        long startedMillis = System.currentTimeMillis();
         String rawBody = null;
+        Integer httpStatus = null;
+        Integer telegramErrorCode = null;
+        String telegramDescription = null;
+        RuntimeException failure = null;
+
+        diagnosticsHooks.onApiRequest(new BotApiRequestEvent(
+            correlationId,
+            methodName,
+            startedMillis,
+            "<multipart>"
+        ));
+
         try {
             HttpRequest request = HttpRequest.newBuilder(buildMethodUri(methodName))
                 .header("Accept", "application/json")
@@ -833,17 +910,48 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
                 .POST(HttpRequest.BodyPublishers.ofByteArray(multipart.body()))
                 .build();
             HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            httpStatus = response.statusCode();
             rawBody = response.body();
             TelegramApiResponse<T> envelope = parseApiResponse(rawBody, resultType, objectMapper);
             if (!Boolean.TRUE.equals(envelope.ok())) {
-                throw new TelegramApiException(envelope.errorCode(), envelope.description(), rawBody);
+                telegramErrorCode = envelope.errorCode();
+                telegramDescription = envelope.description();
+                failure = new TelegramApiException(envelope.errorCode(), envelope.description(), rawBody);
+                throw failure;
             }
             return envelope.result();
         } catch (IOException e) {
-            throw new TelegramApiException(null, "I/O error while calling Telegram Bot API", rawBody, e);
+            failure = new TelegramApiException(null, "I/O error while calling Telegram Bot API", rawBody, e);
+            throw failure;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new TelegramApiException(null, "Interrupted while calling Telegram Bot API", rawBody, e);
+            failure = new TelegramApiException(null, "Interrupted while calling Telegram Bot API", rawBody, e);
+            throw failure;
+        } catch (RuntimeException e) {
+            failure = e;
+            throw e;
+        } finally {
+            long durationMillis = nanosToMillis(startedNanos);
+            diagnosticsHooks.onApiResponse(new BotApiResponseEvent(
+                correlationId,
+                methodName,
+                durationMillis,
+                failure == null,
+                httpStatus,
+                telegramErrorCode,
+                telegramDescription,
+                diagnosticsHooks.redact(rawBody)
+            ));
+            if (failure != null) {
+                diagnosticsHooks.onError(new DiagnosticErrorEvent(
+                    correlationId,
+                    "api-client",
+                    "invoke-multipart",
+                    null,
+                    methodName,
+                    failure
+                ));
+            }
         }
     }
 
@@ -864,6 +972,21 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
 
     private URI buildMethodUri(String methodName) {
         return URI.create(baseUrl + "/bot" + botToken + "/" + methodName);
+    }
+
+    private String serializeRequestPreview(Object requestBody) {
+        if (requestBody == null) {
+            return null;
+        }
+        try {
+            return objectMapper.writeValueAsString(requestBody);
+        } catch (JsonProcessingException e) {
+            return "<unavailable>";
+        }
+    }
+
+    private static long nanosToMillis(long startedNanos) {
+        return Math.max(0L, (System.nanoTime() - startedNanos) / 1_000_000L);
     }
 
     private boolean requiresMultipartUpload(InputFile inputFile) {

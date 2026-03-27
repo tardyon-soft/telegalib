@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.Objects;
 import ru.tardyon.botframework.telegram.api.TelegramApiClient;
 import ru.tardyon.botframework.telegram.api.model.Update;
+import ru.tardyon.botframework.telegram.diagnostics.DiagnosticErrorEvent;
+import ru.tardyon.botframework.telegram.diagnostics.DiagnosticsHooks;
 import ru.tardyon.botframework.telegram.dispatcher.Dispatcher;
 import ru.tardyon.botframework.telegram.dispatcher.UpdateContext;
 import ru.tardyon.botframework.telegram.fsm.InMemoryStateStorage;
@@ -17,6 +19,7 @@ public class DefaultWebhookUpdateProcessor implements WebhookUpdateProcessor {
     private final String expectedSecretToken;
     private final StateStorage stateStorage;
     private final String botId;
+    private final DiagnosticsHooks diagnosticsHooks;
 
     public DefaultWebhookUpdateProcessor(
         ObjectMapper objectMapper,
@@ -30,7 +33,8 @@ public class DefaultWebhookUpdateProcessor implements WebhookUpdateProcessor {
             telegramApiClient,
             expectedSecretToken,
             new InMemoryStateStorage(),
-            botIdFromClient(telegramApiClient)
+            botIdFromClient(telegramApiClient),
+            DiagnosticsHooks.noop()
         );
     }
 
@@ -42,28 +46,61 @@ public class DefaultWebhookUpdateProcessor implements WebhookUpdateProcessor {
         StateStorage stateStorage,
         String botId
     ) {
+        this(objectMapper, dispatcher, telegramApiClient, expectedSecretToken, stateStorage, botId, DiagnosticsHooks.noop());
+    }
+
+    public DefaultWebhookUpdateProcessor(
+        ObjectMapper objectMapper,
+        Dispatcher dispatcher,
+        TelegramApiClient telegramApiClient,
+        String expectedSecretToken,
+        StateStorage stateStorage,
+        String botId,
+        DiagnosticsHooks diagnosticsHooks
+    ) {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
         this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher must not be null");
         this.telegramApiClient = telegramApiClient;
         this.expectedSecretToken = expectedSecretToken;
         this.stateStorage = Objects.requireNonNull(stateStorage, "stateStorage must not be null");
         this.botId = requireBotId(botId);
+        this.diagnosticsHooks = Objects.requireNonNull(diagnosticsHooks, "diagnosticsHooks must not be null");
     }
 
     @Override
     public void process(String rawJsonBody, WebhookRequestMetadata metadata) {
-        validateSecretToken(metadata);
+        String correlationId = diagnosticsHooks.newCorrelationId();
+        validateSecretToken(metadata, correlationId);
         try {
             Update update = objectMapper.readValue(rawJsonBody, Update.class);
-            dispatcher.dispatch(new UpdateContext(update, telegramApiClient, stateStorage, botId));
+            UpdateContext context = new UpdateContext(update, telegramApiClient, stateStorage, botId);
+            context.setAttribute(DiagnosticsHooks.CORRELATION_ID_ATTR, correlationId);
+            context.setAttribute(DiagnosticsHooks.UPDATE_SOURCE_ATTR, "WEBHOOK");
+            dispatcher.dispatch(context);
         } catch (WebhookSecurityException e) {
+            diagnosticsHooks.onError(new DiagnosticErrorEvent(
+                correlationId,
+                "webhook",
+                "security",
+                null,
+                null,
+                e
+            ));
             throw e;
         } catch (Exception e) {
+            diagnosticsHooks.onError(new DiagnosticErrorEvent(
+                correlationId,
+                "webhook",
+                "parse-or-dispatch",
+                null,
+                null,
+                e
+            ));
             throw new IllegalArgumentException("Failed to parse/process webhook update", e);
         }
     }
 
-    private void validateSecretToken(WebhookRequestMetadata metadata) {
+    private void validateSecretToken(WebhookRequestMetadata metadata, String correlationId) {
         if (expectedSecretToken == null || expectedSecretToken.isBlank()) {
             return;
         }

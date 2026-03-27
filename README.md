@@ -127,3 +127,49 @@ Notes:
   - local file paths via `file://` URI semantics for uploads,
   - webhook over HTTP,
   - local IP addresses and arbitrary ports for webhook endpoint.
+
+## Diagnostics Hooks (Stage 6 Scaffold)
+
+Core diagnostics abstractions live in `ru.tardyon.botframework.telegram.diagnostics`:
+- `BotApiRequestListener`
+- `BotApiResponseListener`
+- `UpdateProcessingListener`
+- `ErrorListener`
+- `DiagnosticsHooks` (registry/composer)
+- `SensitiveDataRedactor` with default implementation `DefaultSensitiveDataRedactor`
+
+Attach diagnostics listeners:
+
+```java
+DiagnosticsHooks hooks = DiagnosticsHooks.builder()
+    .addRequestListener(event -> System.out.println("API request: " + event.methodName()))
+    .addResponseListener(event -> System.out.println("API response ms: " + event.durationMillis()))
+    .addErrorListener(event -> System.err.println("Error: " + event.component() + " " + event.operation()))
+    .build();
+
+DefaultTelegramApiClient client = new DefaultTelegramApiClient(
+    token,
+    BotApiTransportProfile.cloudDefault(),
+    HttpClient.newHttpClient(),
+    new ObjectMapper(),
+    hooks
+);
+```
+
+Log API timings:
+
+```java
+hooks = DiagnosticsHooks.builder()
+    .addResponseListener(event ->
+        System.out.println(event.methodName() + " took " + event.durationMillis() + "ms, success=" + event.success()))
+    .build();
+```
+
+Redact payment/provider fields:
+
+```java
+String redacted = DefaultSensitiveDataRedactor.INSTANCE.redact(
+    "{\"provider_token\":\"abc\",\"provider_data\":\"raw\",\"secret_token\":\"wh\"}"
+);
+// -> provider/token fields are replaced with <redacted>
+```
