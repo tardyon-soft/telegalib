@@ -1,6 +1,6 @@
-# Telegram Bot Framework (Stage 5)
+# Telegram Bot Framework (Stage 6)
 
-Multi-module Gradle project for Telegram bot runtime/library with Stage 5 scope.
+Multi-module Gradle project for Telegram bot runtime/library with Stage 6 scope.
 
 ## Modules Overview
 
@@ -20,7 +20,7 @@ Multi-module Gradle project for Telegram bot runtime/library with Stage 5 scope.
   - Stage 6 testing/support module for fake Bot API server, fixtures, assertions, and update simulation.
   - Not a production runtime dependency for application modules.
 
-## Supported In Stage 5
+## Supported In Stage 6
 
 - Core Bot API methods from Stage 1-4 plus Stage 5 monetization/business operations:
   - monetization: `sendPaidMedia`, `getMyStarBalance`, `getStarTransactions`, `refundStarPayment`, `editUserStarSubscription`
@@ -35,9 +35,14 @@ Multi-module Gradle project for Telegram bot runtime/library with Stage 5 scope.
   - manual `Router` wiring still supported
 - Demo:
   - Stage 5 command scenarios and service-message handlers
-- Stage 6 scaffolding:
-  - `botapi-generator` package skeleton for parser/model/writer pipeline
-  - `testkit` package skeleton for fake server/fixture/assertion/update simulation
+- Stage 6 platform/tooling maturity:
+  - core transport profiles (`CLOUD`/`LOCAL`) and base URL override
+  - core diagnostics hooks (`BotApiRequestListener`, `BotApiResponseListener`, `UpdateProcessingListener`, `ErrorListener`)
+  - core capability/version model (`BotApiVersion`, `BotApiCapability`, resolver)
+  - starter transport/diagnostics integration and capability bean exposure
+  - generator MVP pipeline with deterministic generated subset output
+  - testkit fake Bot API server + polling/webhook simulators + request assertions + fixtures
+  - demo profiles for `cloud` / `local` / `fake` modes
 
 ## Not Supported Yet
 
@@ -46,7 +51,8 @@ Multi-module Gradle project for Telegram bot runtime/library with Stage 5 scope.
 - Full gifts/treasury/backoffice suite beyond current Stage 5 methods.
 - Full WebApp frontend SDK wrapper stack.
 - Distributed storage or infra-heavy operational components as mandatory part of library.
-- Code generation and fake Telegram server/testkit.
+- Full protocol-accurate Telegram emulator in testkit.
+- Generator auto-rewrite of handwritten runtime layers (dispatcher/FSM/starter) without manual review.
 
 ## Design Constraints
 
