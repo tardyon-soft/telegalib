@@ -24,6 +24,7 @@ import ru.tardyon.botframework.telegram.api.file.InputFile;
 import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
@@ -32,6 +33,7 @@ import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
+import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommandScopeDefault;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
@@ -42,6 +44,9 @@ import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButtons;
 import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
+import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
+import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
+import ru.tardyon.botframework.telegram.api.model.webapp.WebAppInfo;
 
 class DefaultTelegramApiClientStage2MethodsTest {
 
@@ -166,6 +171,59 @@ class DefaultTelegramApiClientStage2MethodsTest {
     }
 
     @Test
+    void answerWebAppQueryUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"inline_message_id":"im-1"}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        SentWebAppMessage result = client.answerWebAppQuery(
+            new AnswerWebAppQueryRequest(
+                "waq-1",
+                new InlineQueryResultArticle("a1", "Title", InputTextMessageContent.of("From WebApp"))
+            )
+        );
+
+        assertEquals("im-1", result.inlineMessageId());
+        assertEquals("/bottoken/answerWebAppQuery", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"web_app_query_id\":\"waq-1\""));
+        assertTrue(body.contains("\"result\""));
+        assertTrue(body.contains("\"type\":\"article\""));
+    }
+
+    @Test
+    void savePreparedInlineMessageUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"id":"prepared-1","expiration_date":1710009999}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        PreparedInlineMessage result = client.savePreparedInlineMessage(
+            new SavePreparedInlineMessageRequest(
+                123L,
+                new InlineQueryResultArticle("a1", "Title", InputTextMessageContent.of("Prepared")),
+                true,
+                false,
+                true,
+                false
+            )
+        );
+
+        assertEquals("prepared-1", result.id());
+        assertEquals(1710009999L, result.expirationDate());
+        assertEquals("/bottoken/savePreparedInlineMessage", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"user_id\":123"));
+        assertTrue(body.contains("\"allow_user_chats\":true"));
+        assertTrue(body.contains("\"allow_group_chats\":true"));
+    }
+
+    @Test
     void sendInvoiceUsesExpectedMethodAndPayload() {
         RecordingHttpClient httpClient = new RecordingHttpClient(
             """
@@ -255,6 +313,16 @@ class DefaultTelegramApiClientStage2MethodsTest {
         String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
         assertTrue(body.contains("\"chat_id\":321"));
         assertTrue(body.contains("\"menu_button\":{\"type\":\"commands\"}"));
+    }
+
+    @Test
+    void serializesInlineKeyboardWebAppButton() throws Exception {
+        String json = objectMapper.writeValueAsString(
+            ru.tardyon.botframework.telegram.api.model.markup.Keyboards.inlineKeyboard()
+                .row(ru.tardyon.botframework.telegram.api.model.markup.Keyboards.webAppButton("Open App", new WebAppInfo("https://example.com/app")))
+                .build()
+        );
+        assertTrue(json.contains("\"web_app\":{\"url\":\"https://example.com/app\"}"));
     }
 
     @Test

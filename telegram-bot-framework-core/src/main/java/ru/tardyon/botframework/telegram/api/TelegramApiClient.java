@@ -6,6 +6,7 @@ import ru.tardyon.botframework.telegram.api.method.AnswerCallbackQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
@@ -21,6 +22,7 @@ import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMediaGroupRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
 import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
 import ru.tardyon.botframework.telegram.api.model.Message;
@@ -30,6 +32,8 @@ import ru.tardyon.botframework.telegram.api.model.User;
 import ru.tardyon.botframework.telegram.api.model.WebhookInfo;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
+import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
+import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
 
 public interface TelegramApiClient {
 
@@ -48,6 +52,10 @@ public interface TelegramApiClient {
     boolean answerCallbackQuery(AnswerCallbackQueryRequest request);
 
     boolean answerInlineQuery(AnswerInlineQueryRequest request);
+
+    SentWebAppMessage answerWebAppQuery(AnswerWebAppQueryRequest request);
+
+    PreparedInlineMessage savePreparedInlineMessage(SavePreparedInlineMessageRequest request);
 
     Message sendInvoice(SendInvoiceRequest request);
 

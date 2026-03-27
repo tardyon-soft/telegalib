@@ -3,6 +3,7 @@ package ru.tardyon.botframework.telegram.api.model.markup;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import ru.tardyon.botframework.telegram.api.model.webapp.WebAppInfo;
 
 public final class Keyboards {
 
@@ -23,6 +24,14 @@ public final class Keyboards {
 
     public static InlineKeyboardButton urlButton(String text, String url) {
         return InlineKeyboardButton.url(text, url);
+    }
+
+    public static InlineKeyboardButton webAppButton(String text, WebAppInfo webApp) {
+        return InlineKeyboardButton.webApp(text, webApp);
+    }
+
+    public static KeyboardButton replyWebAppButton(String text, WebAppInfo webApp) {
+        return KeyboardButton.webApp(text, webApp);
     }
 
     public static InlineKeyboardButton switchInlineQueryButton(String text, String query) {

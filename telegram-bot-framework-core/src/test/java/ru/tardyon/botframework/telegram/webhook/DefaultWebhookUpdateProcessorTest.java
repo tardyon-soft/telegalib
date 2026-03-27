@@ -152,6 +152,20 @@ class DefaultWebhookUpdateProcessorTest {
         }
 
         @Override
+        public ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage answerWebAppQuery(
+            ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage savePreparedInlineMessage(
+            ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Message sendInvoice(ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest request) {
             throw new UnsupportedOperationException();
         }

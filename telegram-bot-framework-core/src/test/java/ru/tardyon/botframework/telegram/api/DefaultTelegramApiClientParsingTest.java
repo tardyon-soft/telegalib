@@ -327,6 +327,40 @@ class DefaultTelegramApiClientParsingTest {
     }
 
     @Test
+    void parseMessageWithWebAppData() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 1008,
+                  "message": {
+                    "message_id": 43,
+                    "date": 1710000001,
+                    "chat": { "id": 123456789, "type": "private" },
+                    "web_app_data": {
+                      "data": "{\\\"k\\\":\\\"v\\\"}",
+                      "button_text": "Open app"
+                    }
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response =
+            DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        Update update = response.result().getFirst();
+        assertNotNull(update.message());
+        assertNotNull(update.message().webAppData());
+        assertEquals("{\"k\":\"v\"}", update.message().webAppData().data());
+        assertEquals("Open app", update.message().webAppData().buttonText());
+    }
+
+    @Test
     void parseEditMessageTextBooleanResult() {
         String raw = """
             {

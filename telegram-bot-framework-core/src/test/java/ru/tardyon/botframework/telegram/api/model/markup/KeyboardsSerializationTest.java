@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
+import ru.tardyon.botframework.telegram.api.model.webapp.WebAppInfo;
 
 class KeyboardsSerializationTest {
 
@@ -58,5 +59,21 @@ class KeyboardsSerializationTest {
         assertTrue(json.contains("\"switch_inline_query_chosen_chat\""));
         assertTrue(json.contains("\"allow_user_chats\":true"));
         assertTrue(json.contains("\"copy_text\":{\"text\":\"copied text\"}"));
+    }
+
+    @Test
+    void serializesWebAppButtons() throws Exception {
+        InlineKeyboardMarkup inlineMarkup = Keyboards.inlineKeyboard()
+            .row(Keyboards.webAppButton("Open App", new WebAppInfo("https://example.com/app")))
+            .build();
+        ReplyKeyboardMarkup replyMarkup = Keyboards.replyKeyboard()
+            .rowButtons(Keyboards.replyWebAppButton("Launch", new WebAppInfo("https://example.com/miniapp")))
+            .build();
+
+        String inlineJson = objectMapper.writeValueAsString(SendMessageRequest.of(123L, "Inline app", inlineMarkup));
+        String replyJson = objectMapper.writeValueAsString(SendMessageRequest.of(123L, "Reply app", replyMarkup));
+
+        assertTrue(inlineJson.contains("\"web_app\":{\"url\":\"https://example.com/app\"}"));
+        assertTrue(replyJson.contains("\"web_app\":{\"url\":\"https://example.com/miniapp\"}"));
     }
 }

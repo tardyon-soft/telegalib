@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import ru.tardyon.botframework.telegram.api.model.payment.Invoice;
 import ru.tardyon.botframework.telegram.api.model.payment.SuccessfulPayment;
+import ru.tardyon.botframework.telegram.api.model.webapp.WebAppData;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record Message(
@@ -17,7 +18,8 @@ public record Message(
     @JsonProperty("edit_date") Integer editDate,
     @JsonProperty("reply_to_message") Message replyToMessage,
     Invoice invoice,
-    @JsonProperty("successful_payment") SuccessfulPayment successfulPayment
+    @JsonProperty("successful_payment") SuccessfulPayment successfulPayment,
+    @JsonProperty("web_app_data") WebAppData webAppData
 ) implements MaybeInaccessibleMessage {
 
     public Message(
@@ -30,6 +32,21 @@ public record Message(
         Integer editDate,
         Message replyToMessage
     ) {
-        this(messageId, from, chat, date, text, entities, editDate, replyToMessage, null, null);
+        this(messageId, from, chat, date, text, entities, editDate, replyToMessage, null, null, null);
+    }
+
+    public Message(
+        Integer messageId,
+        User from,
+        Chat chat,
+        Integer date,
+        String text,
+        List<MessageEntity> entities,
+        Integer editDate,
+        Message replyToMessage,
+        Invoice invoice,
+        SuccessfulPayment successfulPayment
+    ) {
+        this(messageId, from, chat, date, text, entities, editDate, replyToMessage, invoice, successfulPayment, null);
     }
 }
