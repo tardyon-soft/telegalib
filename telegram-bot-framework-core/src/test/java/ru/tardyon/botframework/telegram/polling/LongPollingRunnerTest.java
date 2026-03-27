@@ -185,6 +185,23 @@ class LongPollingRunnerTest {
         }
 
         @Override
+        public ru.tardyon.botframework.telegram.api.model.business.BusinessConnection getBusinessConnection(
+            ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean readBusinessMessage(ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean deleteBusinessMessages(ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public boolean setWebhook(SetWebhookRequest request) {
             throw new UnsupportedOperationException();
         }
@@ -337,6 +354,23 @@ class LongPollingRunnerTest {
 
         @Override
         public boolean answerPreCheckoutQuery(ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.business.BusinessConnection getBusinessConnection(
+            ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean readBusinessMessage(ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean deleteBusinessMessages(ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest request) {
             throw new UnsupportedOperationException();
         }
 

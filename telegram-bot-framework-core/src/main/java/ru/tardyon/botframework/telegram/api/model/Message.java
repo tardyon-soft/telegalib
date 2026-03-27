@@ -9,8 +9,10 @@ import ru.tardyon.botframework.telegram.api.model.webapp.WebAppData;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record Message(
+    @JsonProperty("business_connection_id") String businessConnectionId,
     @JsonProperty("message_id") Integer messageId,
     User from,
+    @JsonProperty("sender_business_bot") User senderBusinessBot,
     Chat chat,
     Integer date,
     String text,
@@ -32,7 +34,7 @@ public record Message(
         Integer editDate,
         Message replyToMessage
     ) {
-        this(messageId, from, chat, date, text, entities, editDate, replyToMessage, null, null, null);
+        this(null, messageId, from, null, chat, date, text, entities, editDate, replyToMessage, null, null, null);
     }
 
     public Message(
@@ -47,6 +49,35 @@ public record Message(
         Invoice invoice,
         SuccessfulPayment successfulPayment
     ) {
-        this(messageId, from, chat, date, text, entities, editDate, replyToMessage, invoice, successfulPayment, null);
+        this(null, messageId, from, null, chat, date, text, entities, editDate, replyToMessage, invoice, successfulPayment, null);
+    }
+
+    public Message(
+        String businessConnectionId,
+        Integer messageId,
+        User from,
+        User senderBusinessBot,
+        Chat chat,
+        Integer date,
+        String text,
+        List<MessageEntity> entities,
+        Integer editDate,
+        Message replyToMessage
+    ) {
+        this(
+            businessConnectionId,
+            messageId,
+            from,
+            senderBusinessBot,
+            chat,
+            date,
+            text,
+            entities,
+            editDate,
+            replyToMessage,
+            null,
+            null,
+            null
+        );
     }
 }

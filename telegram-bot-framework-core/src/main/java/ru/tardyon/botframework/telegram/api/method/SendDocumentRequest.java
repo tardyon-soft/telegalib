@@ -7,6 +7,7 @@ import ru.tardyon.botframework.telegram.api.model.markup.ReplyMarkup;
 
 public record SendDocumentRequest(
     @JsonProperty("chat_id") Object chatId,
+    @JsonProperty("business_connection_id") String businessConnectionId,
     InputFile document,
     String caption,
     @JsonProperty("reply_markup") ReplyMarkup replyMarkup
@@ -17,10 +18,19 @@ public record SendDocumentRequest(
     }
 
     public static SendDocumentRequest of(long chatId, InputFile document) {
-        return new SendDocumentRequest(chatId, document, null, null);
+        return new SendDocumentRequest(chatId, null, document, null, null);
     }
 
     public static SendDocumentRequest of(String chatId, InputFile document) {
-        return new SendDocumentRequest(chatId, document, null, null);
+        return new SendDocumentRequest(chatId, null, document, null, null);
+    }
+
+    public SendDocumentRequest(
+        Object chatId,
+        InputFile document,
+        String caption,
+        ReplyMarkup replyMarkup
+    ) {
+        this(chatId, null, document, caption, replyMarkup);
     }
 }

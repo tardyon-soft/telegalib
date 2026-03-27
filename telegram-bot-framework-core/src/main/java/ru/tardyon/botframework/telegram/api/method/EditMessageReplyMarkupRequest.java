@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import ru.tardyon.botframework.telegram.api.model.markup.InlineKeyboardMarkup;
 
 public record EditMessageReplyMarkupRequest(
+    @JsonProperty("business_connection_id") String businessConnectionId,
     @JsonProperty("chat_id") Object chatId,
     @JsonProperty("message_id") Integer messageId,
     @JsonProperty("inline_message_id") String inlineMessageId,
@@ -23,14 +24,38 @@ public record EditMessageReplyMarkupRequest(
     }
 
     public static EditMessageReplyMarkupRequest forChatMessage(long chatId, int messageId, InlineKeyboardMarkup replyMarkup) {
-        return new EditMessageReplyMarkupRequest(chatId, messageId, null, replyMarkup);
+        return new EditMessageReplyMarkupRequest(null, chatId, messageId, null, replyMarkup);
     }
 
     public static EditMessageReplyMarkupRequest forChatMessage(String chatId, int messageId, InlineKeyboardMarkup replyMarkup) {
-        return new EditMessageReplyMarkupRequest(chatId, messageId, null, replyMarkup);
+        return new EditMessageReplyMarkupRequest(null, chatId, messageId, null, replyMarkup);
     }
 
     public static EditMessageReplyMarkupRequest forInlineMessage(String inlineMessageId, InlineKeyboardMarkup replyMarkup) {
-        return new EditMessageReplyMarkupRequest(null, null, inlineMessageId, replyMarkup);
+        return new EditMessageReplyMarkupRequest(null, null, null, inlineMessageId, replyMarkup);
+    }
+
+    public static EditMessageReplyMarkupRequest forBusinessChatMessage(
+        String businessConnectionId,
+        long chatId,
+        int messageId,
+        InlineKeyboardMarkup replyMarkup
+    ) {
+        return new EditMessageReplyMarkupRequest(
+            java.util.Objects.requireNonNull(businessConnectionId, "businessConnectionId must not be null"),
+            chatId,
+            messageId,
+            null,
+            replyMarkup
+        );
+    }
+
+    public EditMessageReplyMarkupRequest(
+        Object chatId,
+        Integer messageId,
+        String inlineMessageId,
+        InlineKeyboardMarkup replyMarkup
+    ) {
+        this(null, chatId, messageId, inlineMessageId, replyMarkup);
     }
 }

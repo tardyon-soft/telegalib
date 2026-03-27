@@ -8,6 +8,8 @@ import ru.tardyon.botframework.telegram.api.model.CallbackQuery;
 import ru.tardyon.botframework.telegram.api.model.ChosenInlineResult;
 import ru.tardyon.botframework.telegram.api.model.InlineQuery;
 import ru.tardyon.botframework.telegram.api.model.Message;
+import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
+import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
 import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
 import ru.tardyon.botframework.telegram.dispatcher.filter.ContextFilter;
@@ -17,6 +19,8 @@ import ru.tardyon.botframework.telegram.dispatcher.handler.CallbackQueryHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.ChosenInlineResultHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.InlineQueryHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.MessageHandler;
+import ru.tardyon.botframework.telegram.dispatcher.handler.BusinessConnectionHandler;
+import ru.tardyon.botframework.telegram.dispatcher.handler.BusinessMessagesDeletedHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.PreCheckoutQueryHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.ShippingQueryHandler;
 
@@ -34,6 +38,14 @@ public class Router {
     private final List<ContextShippingQueryRoute> contextShippingQueryRoutes = new CopyOnWriteArrayList<>();
     private final List<PreCheckoutQueryRoute> preCheckoutQueryRoutes = new CopyOnWriteArrayList<>();
     private final List<ContextPreCheckoutQueryRoute> contextPreCheckoutQueryRoutes = new CopyOnWriteArrayList<>();
+    private final List<BusinessConnectionRoute> businessConnectionRoutes = new CopyOnWriteArrayList<>();
+    private final List<ContextBusinessConnectionRoute> contextBusinessConnectionRoutes = new CopyOnWriteArrayList<>();
+    private final List<MessageRoute> businessMessageRoutes = new CopyOnWriteArrayList<>();
+    private final List<ContextMessageRoute> contextBusinessMessageRoutes = new CopyOnWriteArrayList<>();
+    private final List<MessageRoute> editedBusinessMessageRoutes = new CopyOnWriteArrayList<>();
+    private final List<ContextMessageRoute> contextEditedBusinessMessageRoutes = new CopyOnWriteArrayList<>();
+    private final List<BusinessMessagesDeletedRoute> deletedBusinessMessagesRoutes = new CopyOnWriteArrayList<>();
+    private final List<ContextBusinessMessagesDeletedRoute> contextDeletedBusinessMessagesRoutes = new CopyOnWriteArrayList<>();
     private final List<Router> includedRouters = new CopyOnWriteArrayList<>();
 
     public Router message(Filter<Message> filter, MessageHandler handler) {
@@ -156,6 +168,89 @@ public class Router {
         return this;
     }
 
+    public Router businessConnection(Filter<BusinessConnection> filter, BusinessConnectionHandler handler) {
+        businessConnectionRoutes.add(new BusinessConnectionRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router businessConnection(BusinessConnectionHandler handler) {
+        return businessConnection(Filters.any(), handler);
+    }
+
+    public Router businessConnection(ContextFilter<BusinessConnection> filter, BusinessConnectionHandler handler) {
+        contextBusinessConnectionRoutes.add(new ContextBusinessConnectionRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router businessMessage(Filter<Message> filter, MessageHandler handler) {
+        businessMessageRoutes.add(new MessageRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router businessMessage(MessageHandler handler) {
+        return businessMessage(Filters.any(), handler);
+    }
+
+    public Router businessMessage(ContextFilter<Message> filter, MessageHandler handler) {
+        contextBusinessMessageRoutes.add(new ContextMessageRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router editedBusinessMessage(Filter<Message> filter, MessageHandler handler) {
+        editedBusinessMessageRoutes.add(new MessageRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router editedBusinessMessage(MessageHandler handler) {
+        return editedBusinessMessage(Filters.any(), handler);
+    }
+
+    public Router editedBusinessMessage(ContextFilter<Message> filter, MessageHandler handler) {
+        contextEditedBusinessMessageRoutes.add(new ContextMessageRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router deletedBusinessMessages(Filter<BusinessMessagesDeleted> filter, BusinessMessagesDeletedHandler handler) {
+        deletedBusinessMessagesRoutes.add(new BusinessMessagesDeletedRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router deletedBusinessMessages(BusinessMessagesDeletedHandler handler) {
+        return deletedBusinessMessages(Filters.any(), handler);
+    }
+
+    public Router deletedBusinessMessages(
+        ContextFilter<BusinessMessagesDeleted> filter,
+        BusinessMessagesDeletedHandler handler
+    ) {
+        contextDeletedBusinessMessagesRoutes.add(new ContextBusinessMessagesDeletedRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
     public Router include(Router router) {
         includedRouters.add(Objects.requireNonNull(router, "router must not be null"));
         return this;
@@ -180,6 +275,22 @@ public class Router {
         PreCheckoutQuery preCheckoutQuery = updateContext.getPreCheckoutQuery();
         if (preCheckoutQuery != null) {
             routePreCheckoutQuery(updateContext, preCheckoutQuery);
+        }
+        BusinessConnection businessConnection = updateContext.getBusinessConnection();
+        if (businessConnection != null) {
+            routeBusinessConnection(updateContext, businessConnection);
+        }
+        Message businessMessage = updateContext.getBusinessMessage();
+        if (businessMessage != null) {
+            routeBusinessMessage(updateContext, businessMessage);
+        }
+        Message editedBusinessMessage = updateContext.getEditedBusinessMessage();
+        if (editedBusinessMessage != null) {
+            routeEditedBusinessMessage(updateContext, editedBusinessMessage);
+        }
+        BusinessMessagesDeleted deletedBusinessMessages = updateContext.getDeletedBusinessMessages();
+        if (deletedBusinessMessages != null) {
+            routeDeletedBusinessMessages(updateContext, deletedBusinessMessages);
         }
         InlineQuery inlineQuery = updateContext.getInlineQuery();
         if (inlineQuery != null) {
@@ -297,6 +408,74 @@ public class Router {
         }
     }
 
+    private void routeBusinessConnection(UpdateContext context, BusinessConnection businessConnection) {
+        List<BusinessConnectionHandler> matchedHandlers = new ArrayList<>();
+        for (BusinessConnectionRoute route : businessConnectionRoutes) {
+            if (route.filter().test(businessConnection)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (ContextBusinessConnectionRoute route : contextBusinessConnectionRoutes) {
+            if (route.filter().test(context, businessConnection)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (BusinessConnectionHandler matchedHandler : matchedHandlers) {
+            matchedHandler.handle(context, businessConnection);
+        }
+    }
+
+    private void routeBusinessMessage(UpdateContext context, Message message) {
+        List<MessageHandler> matchedHandlers = new ArrayList<>();
+        for (MessageRoute route : businessMessageRoutes) {
+            if (route.filter().test(message)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (ContextMessageRoute route : contextBusinessMessageRoutes) {
+            if (route.filter().test(context, message)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (MessageHandler matchedHandler : matchedHandlers) {
+            matchedHandler.handle(context, message);
+        }
+    }
+
+    private void routeEditedBusinessMessage(UpdateContext context, Message message) {
+        List<MessageHandler> matchedHandlers = new ArrayList<>();
+        for (MessageRoute route : editedBusinessMessageRoutes) {
+            if (route.filter().test(message)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (ContextMessageRoute route : contextEditedBusinessMessageRoutes) {
+            if (route.filter().test(context, message)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (MessageHandler matchedHandler : matchedHandlers) {
+            matchedHandler.handle(context, message);
+        }
+    }
+
+    private void routeDeletedBusinessMessages(UpdateContext context, BusinessMessagesDeleted deleted) {
+        List<BusinessMessagesDeletedHandler> matchedHandlers = new ArrayList<>();
+        for (BusinessMessagesDeletedRoute route : deletedBusinessMessagesRoutes) {
+            if (route.filter().test(deleted)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (ContextBusinessMessagesDeletedRoute route : contextDeletedBusinessMessagesRoutes) {
+            if (route.filter().test(context, deleted)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (BusinessMessagesDeletedHandler matchedHandler : matchedHandlers) {
+            matchedHandler.handle(context, deleted);
+        }
+    }
+
     private record MessageRoute(Filter<Message> filter, MessageHandler handler) {
     }
 
@@ -336,6 +515,27 @@ public class Router {
     private record ContextPreCheckoutQueryRoute(
         ContextFilter<PreCheckoutQuery> filter,
         PreCheckoutQueryHandler handler
+    ) {
+    }
+
+    private record BusinessConnectionRoute(Filter<BusinessConnection> filter, BusinessConnectionHandler handler) {
+    }
+
+    private record ContextBusinessConnectionRoute(
+        ContextFilter<BusinessConnection> filter,
+        BusinessConnectionHandler handler
+    ) {
+    }
+
+    private record BusinessMessagesDeletedRoute(
+        Filter<BusinessMessagesDeleted> filter,
+        BusinessMessagesDeletedHandler handler
+    ) {
+    }
+
+    private record ContextBusinessMessagesDeletedRoute(
+        ContextFilter<BusinessMessagesDeleted> filter,
+        BusinessMessagesDeletedHandler handler
     ) {
     }
 }

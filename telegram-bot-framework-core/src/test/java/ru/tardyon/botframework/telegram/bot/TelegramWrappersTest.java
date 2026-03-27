@@ -10,6 +10,7 @@ import ru.tardyon.botframework.telegram.api.TelegramApiClient;
 import ru.tardyon.botframework.telegram.api.method.AnswerCallbackQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
@@ -17,6 +18,8 @@ import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
+import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMediaGroupRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
@@ -112,6 +115,34 @@ class TelegramWrappersTest {
         assertEquals("menu:back", client.lastEditMessageReplyMarkupRequest.replyMarkup().inlineKeyboard().get(0).get(0).callbackData());
     }
 
+    @Test
+    void businessMessageWrapperSupportsReadAndDeleteAsBusiness() {
+        FakeClient client = new FakeClient();
+        Message source = new Message(
+            "bc-1",
+            88,
+            new User(1L, false, "A", null, "a", "en", null, null, null),
+            null,
+            new Chat(555L, "private", null, null, null, null, null),
+            1,
+            "ping",
+            null,
+            null,
+            null
+        );
+
+        TelegramMessage wrapper = new TelegramMessage(source, client);
+
+        assertTrue(wrapper.readAsBusiness());
+        assertTrue(wrapper.deleteAsBusiness());
+
+        assertEquals("bc-1", client.lastReadBusinessMessageRequest.businessConnectionId());
+        assertEquals(555L, client.lastReadBusinessMessageRequest.chatId());
+        assertEquals(88, client.lastReadBusinessMessageRequest.messageId());
+        assertEquals("bc-1", client.lastDeleteBusinessMessagesRequest.businessConnectionId());
+        assertEquals(List.of(88), client.lastDeleteBusinessMessagesRequest.messageIds());
+    }
+
     private static final class FakeClient implements TelegramApiClient {
 
         private SendMessageRequest lastSendMessageRequest;
@@ -119,6 +150,8 @@ class TelegramWrappersTest {
         private DeleteMessageRequest lastDeleteMessageRequest;
         private AnswerCallbackQueryRequest lastAnswerCallbackQueryRequest;
         private EditMessageReplyMarkupRequest lastEditMessageReplyMarkupRequest;
+        private ReadBusinessMessageRequest lastReadBusinessMessageRequest;
+        private DeleteBusinessMessagesRequest lastDeleteBusinessMessagesRequest;
 
         @Override
         public User getMe() {
@@ -192,6 +225,25 @@ class TelegramWrappersTest {
         @Override
         public boolean answerPreCheckoutQuery(ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest request) {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.business.BusinessConnection getBusinessConnection(
+            GetBusinessConnectionRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean readBusinessMessage(ReadBusinessMessageRequest request) {
+            this.lastReadBusinessMessageRequest = request;
+            return true;
+        }
+
+        @Override
+        public boolean deleteBusinessMessages(DeleteBusinessMessagesRequest request) {
+            this.lastDeleteBusinessMessagesRequest = request;
+            return true;
         }
 
         @Override

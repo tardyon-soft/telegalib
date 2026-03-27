@@ -361,6 +361,65 @@ class DefaultTelegramApiClientParsingTest {
     }
 
     @Test
+    void parseGetUpdatesResponseWithBusinessConnectionAndMessages() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 2001,
+                  "business_connection": {
+                    "id": "bc-1",
+                    "user": { "id": 777, "is_bot": false, "first_name": "Alex" },
+                    "user_chat_id": 9001,
+                    "date": 1710000000,
+                    "is_enabled": true
+                  }
+                },
+                {
+                  "update_id": 2002,
+                  "business_message": {
+                    "business_connection_id": "bc-1",
+                    "message_id": 5,
+                    "date": 1710000001,
+                    "chat": { "id": 123, "type": "private" },
+                    "text": "hello"
+                  }
+                },
+                {
+                  "update_id": 2003,
+                  "edited_business_message": {
+                    "business_connection_id": "bc-1",
+                    "message_id": 6,
+                    "date": 1710000002,
+                    "chat": { "id": 123, "type": "private" },
+                    "text": "edited"
+                  }
+                },
+                {
+                  "update_id": 2004,
+                  "deleted_business_messages": {
+                    "business_connection_id": "bc-1",
+                    "chat": { "id": 123, "type": "private" },
+                    "message_ids": [5, 6]
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response =
+            DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        assertEquals("bc-1", response.result().get(0).businessConnection().id());
+        assertEquals("bc-1", response.result().get(1).businessMessage().businessConnectionId());
+        assertEquals("edited", response.result().get(2).editedBusinessMessage().text());
+        assertEquals(List.of(5, 6), response.result().get(3).deletedBusinessMessages().messageIds());
+    }
+
+    @Test
     void parseEditMessageTextBooleanResult() {
         String raw = """
             {

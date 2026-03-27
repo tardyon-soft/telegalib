@@ -9,6 +9,7 @@ import ru.tardyon.botframework.telegram.api.model.media.InputMediaDocument;
 
 public record SendMediaGroupRequest(
     @JsonProperty("chat_id") Object chatId,
+    @JsonProperty("business_connection_id") String businessConnectionId,
     List<InputMedia> media
 ) {
 
@@ -23,11 +24,15 @@ public record SendMediaGroupRequest(
     }
 
     public static SendMediaGroupRequest of(long chatId, List<InputMedia> media) {
-        return new SendMediaGroupRequest(chatId, media);
+        return new SendMediaGroupRequest(chatId, null, media);
     }
 
     public static SendMediaGroupRequest of(String chatId, List<InputMedia> media) {
-        return new SendMediaGroupRequest(chatId, media);
+        return new SendMediaGroupRequest(chatId, null, media);
+    }
+
+    public SendMediaGroupRequest(Object chatId, List<InputMedia> media) {
+        this(chatId, null, media);
     }
 
     private static void validateAlbumTypeComposition(List<InputMedia> media) {

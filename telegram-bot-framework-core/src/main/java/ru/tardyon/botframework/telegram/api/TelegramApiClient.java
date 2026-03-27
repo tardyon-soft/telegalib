@@ -12,9 +12,12 @@ import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
+import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
@@ -32,6 +35,7 @@ import ru.tardyon.botframework.telegram.api.model.User;
 import ru.tardyon.botframework.telegram.api.model.WebhookInfo;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
+import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
 
@@ -65,6 +69,12 @@ public interface TelegramApiClient {
      * The Telegram Bot API requires this method to be called within 10 seconds after receiving a pre_checkout_query update.
      */
     boolean answerPreCheckoutQuery(AnswerPreCheckoutQueryRequest request);
+
+    BusinessConnection getBusinessConnection(GetBusinessConnectionRequest request);
+
+    boolean readBusinessMessage(ReadBusinessMessageRequest request);
+
+    boolean deleteBusinessMessages(DeleteBusinessMessagesRequest request);
 
     boolean setMyCommands(SetMyCommandsRequest request);
 

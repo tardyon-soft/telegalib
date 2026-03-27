@@ -44,6 +44,12 @@ public final class StateKeyResolver {
         if (update.editedChannelPost() != null) {
             return update.editedChannelPost();
         }
+        if (update.businessMessage() != null) {
+            return update.businessMessage();
+        }
+        if (update.editedBusinessMessage() != null) {
+            return update.editedBusinessMessage();
+        }
         return null;
     }
 

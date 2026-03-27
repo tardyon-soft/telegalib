@@ -10,6 +10,8 @@ import ru.tardyon.botframework.telegram.api.model.ChosenInlineResult;
 import ru.tardyon.botframework.telegram.api.model.InlineQuery;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.Update;
+import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
+import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
 import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
@@ -33,6 +35,10 @@ public final class UpdateContext {
         CALLBACK_QUERY,
         SHIPPING_QUERY,
         PRE_CHECKOUT_QUERY,
+        BUSINESS_CONNECTION,
+        BUSINESS_MESSAGE,
+        EDITED_BUSINESS_MESSAGE,
+        DELETED_BUSINESS_MESSAGES,
         INLINE_QUERY,
         CHOSEN_INLINE_RESULT,
         UNSUPPORTED
@@ -44,6 +50,10 @@ public final class UpdateContext {
     private final CallbackQuery callbackQuery;
     private final ShippingQuery shippingQuery;
     private final PreCheckoutQuery preCheckoutQuery;
+    private final BusinessConnection businessConnection;
+    private final Message businessMessage;
+    private final Message editedBusinessMessage;
+    private final BusinessMessagesDeleted deletedBusinessMessages;
     private final InlineQuery inlineQuery;
     private final ChosenInlineResult chosenInlineResult;
     private final TelegramApiClient telegramApiClient;
@@ -77,6 +87,10 @@ public final class UpdateContext {
             this.callbackQuery = null;
             this.shippingQuery = null;
             this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.editedMessage() != null) {
@@ -85,6 +99,10 @@ public final class UpdateContext {
             this.callbackQuery = null;
             this.shippingQuery = null;
             this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.channelPost() != null) {
@@ -93,6 +111,10 @@ public final class UpdateContext {
             this.callbackQuery = null;
             this.shippingQuery = null;
             this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.editedChannelPost() != null) {
@@ -101,6 +123,10 @@ public final class UpdateContext {
             this.callbackQuery = null;
             this.shippingQuery = null;
             this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.callbackQuery() != null) {
@@ -109,6 +135,10 @@ public final class UpdateContext {
             this.callbackQuery = update.callbackQuery();
             this.shippingQuery = null;
             this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.shippingQuery() != null) {
@@ -117,6 +147,10 @@ public final class UpdateContext {
             this.callbackQuery = null;
             this.shippingQuery = update.shippingQuery();
             this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.preCheckoutQuery() != null) {
@@ -125,6 +159,58 @@ public final class UpdateContext {
             this.callbackQuery = null;
             this.shippingQuery = null;
             this.preCheckoutQuery = update.preCheckoutQuery();
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
+            this.inlineQuery = null;
+            this.chosenInlineResult = null;
+        } else if (update.businessConnection() != null) {
+            this.updateType = UpdateType.BUSINESS_CONNECTION;
+            this.message = null;
+            this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
+            this.businessConnection = update.businessConnection();
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
+            this.inlineQuery = null;
+            this.chosenInlineResult = null;
+        } else if (update.businessMessage() != null) {
+            this.updateType = UpdateType.BUSINESS_MESSAGE;
+            this.message = null;
+            this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = update.businessMessage();
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
+            this.inlineQuery = null;
+            this.chosenInlineResult = null;
+        } else if (update.editedBusinessMessage() != null) {
+            this.updateType = UpdateType.EDITED_BUSINESS_MESSAGE;
+            this.message = null;
+            this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = update.editedBusinessMessage();
+            this.deletedBusinessMessages = null;
+            this.inlineQuery = null;
+            this.chosenInlineResult = null;
+        } else if (update.deletedBusinessMessages() != null) {
+            this.updateType = UpdateType.DELETED_BUSINESS_MESSAGES;
+            this.message = null;
+            this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = update.deletedBusinessMessages();
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.inlineQuery() != null) {
@@ -133,6 +219,10 @@ public final class UpdateContext {
             this.callbackQuery = null;
             this.shippingQuery = null;
             this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
             this.inlineQuery = update.inlineQuery();
             this.chosenInlineResult = null;
         } else if (update.chosenInlineResult() != null) {
@@ -141,6 +231,10 @@ public final class UpdateContext {
             this.callbackQuery = null;
             this.shippingQuery = null;
             this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = update.chosenInlineResult();
         } else {
@@ -149,6 +243,10 @@ public final class UpdateContext {
             this.callbackQuery = null;
             this.shippingQuery = null;
             this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         }
@@ -176,6 +274,22 @@ public final class UpdateContext {
 
     public PreCheckoutQuery getPreCheckoutQuery() {
         return preCheckoutQuery;
+    }
+
+    public BusinessConnection getBusinessConnection() {
+        return businessConnection;
+    }
+
+    public Message getBusinessMessage() {
+        return businessMessage;
+    }
+
+    public Message getEditedBusinessMessage() {
+        return editedBusinessMessage;
+    }
+
+    public BusinessMessagesDeleted getDeletedBusinessMessages() {
+        return deletedBusinessMessages;
     }
 
     public InlineQuery getInlineQuery() {

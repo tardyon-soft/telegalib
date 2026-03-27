@@ -26,14 +26,18 @@ import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
+import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
 import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommandScopeDefault;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
@@ -44,6 +48,7 @@ import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButtons;
 import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
+import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.WebAppInfo;
@@ -266,6 +271,22 @@ class DefaultTelegramApiClientStage2MethodsTest {
     }
 
     @Test
+    void sendMessageSupportsBusinessConnectionId() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"message_id":1,"chat":{"id":123,"type":"private"},"date":1}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        client.sendMessage(new SendMessageRequest(123L, "hello", null, "bc-1"));
+
+        assertEquals("/bottoken/sendMessage", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"business_connection_id\":\"bc-1\""));
+    }
+
+    @Test
     void answerShippingQueryUsesExpectedMethodAndPayload() {
         RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
         DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
@@ -299,6 +320,52 @@ class DefaultTelegramApiClientStage2MethodsTest {
         String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
         assertTrue(body.contains("\"pre_checkout_query_id\":\"pcq-1\""));
         assertTrue(body.contains("\"ok\":true"));
+    }
+
+    @Test
+    void getBusinessConnectionUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"id":"bc-1","user":{"id":1,"is_bot":false,"first_name":"Ann"},"user_chat_id":9001,"date":1710000000,"is_enabled":true}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        BusinessConnection connection = client.getBusinessConnection(new GetBusinessConnectionRequest("bc-1"));
+
+        assertEquals("bc-1", connection.id());
+        assertEquals("/bottoken/getBusinessConnection", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"business_connection_id\":\"bc-1\""));
+    }
+
+    @Test
+    void readBusinessMessageUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        boolean result = client.readBusinessMessage(new ReadBusinessMessageRequest("bc-1", 123L, 44));
+
+        assertTrue(result);
+        assertEquals("/bottoken/readBusinessMessage", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"business_connection_id\":\"bc-1\""));
+        assertTrue(body.contains("\"chat_id\":123"));
+        assertTrue(body.contains("\"message_id\":44"));
+    }
+
+    @Test
+    void deleteBusinessMessagesUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        boolean result = client.deleteBusinessMessages(new DeleteBusinessMessagesRequest("bc-1", List.of(10, 11)));
+
+        assertTrue(result);
+        assertEquals("/bottoken/deleteBusinessMessages", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"business_connection_id\":\"bc-1\""));
+        assertTrue(body.contains("\"message_ids\":[10,11]"));
     }
 
     @Test

@@ -24,14 +24,17 @@ import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
+import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
@@ -54,6 +57,7 @@ import ru.tardyon.botframework.telegram.api.model.User;
 import ru.tardyon.botframework.telegram.api.model.WebhookInfo;
 import ru.tardyon.botframework.telegram.api.model.MessageEntity;
 import ru.tardyon.botframework.telegram.api.model.markup.ReplyMarkup;
+import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.media.InputMedia;
@@ -169,6 +173,23 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     @Override
+    public BusinessConnection getBusinessConnection(GetBusinessConnectionRequest request) {
+        return invoke("getBusinessConnection", requireRequest(request), objectMapper.getTypeFactory().constructType(BusinessConnection.class));
+    }
+
+    @Override
+    public boolean readBusinessMessage(ReadBusinessMessageRequest request) {
+        Boolean result = invoke("readBusinessMessage", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean deleteBusinessMessages(DeleteBusinessMessagesRequest request) {
+        Boolean result = invoke("deleteBusinessMessages", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
     public boolean setMyCommands(SetMyCommandsRequest request) {
         Boolean result = invoke("setMyCommands", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
@@ -207,6 +228,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         if (inputFile instanceof InputFileReference reference) {
             SendDocumentJsonPayload jsonPayload = new SendDocumentJsonPayload(
                 actualRequest.chatId(),
+                actualRequest.businessConnectionId(),
                 reference.value(),
                 actualRequest.caption(),
                 actualRequest.replyMarkup()
@@ -227,6 +249,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         if (!hasUpload) {
             SendMediaGroupJsonPayload payload = new SendMediaGroupJsonPayload(
                 actualRequest.chatId(),
+                actualRequest.businessConnectionId(),
                 actualRequest.media().stream()
                     .map(this::toMediaPayloadWithReference)
                     .toList()
@@ -326,6 +349,9 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         try {
             MultipartFormData multipart = new MultipartFormData()
                 .addField("chat_id", String.valueOf(request.chatId()));
+            if (request.businessConnectionId() != null) {
+                multipart.addField("business_connection_id", request.businessConnectionId());
+            }
             if (request.caption() != null) {
                 multipart.addField("caption", request.caption());
             }
@@ -345,6 +371,9 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         try {
             MultipartFormData multipart = new MultipartFormData()
                 .addField("chat_id", String.valueOf(request.chatId()));
+            if (request.businessConnectionId() != null) {
+                multipart.addField("business_connection_id", request.businessConnectionId());
+            }
 
             AtomicInteger counter = new AtomicInteger(0);
             List<SendMediaGroupItemPayload> payloadItems = request.media().stream()
@@ -492,6 +521,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
 
     private record SendDocumentJsonPayload(
         @JsonProperty("chat_id") Object chatId,
+        @JsonProperty("business_connection_id") String businessConnectionId,
         String document,
         String caption,
         @JsonProperty("reply_markup") ReplyMarkup replyMarkup
@@ -500,6 +530,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
 
     private record SendMediaGroupJsonPayload(
         @JsonProperty("chat_id") Object chatId,
+        @JsonProperty("business_connection_id") String businessConnectionId,
         List<SendMediaGroupItemPayload> media
     ) {
     }
