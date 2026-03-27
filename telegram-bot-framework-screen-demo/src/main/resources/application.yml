@@ -1,0 +1,12 @@
+spring:
+  main:
+    banner-mode: "off"
+
+telegram:
+  bot:
+    token: ${BOT_TOKEN}
+    mode: polling
+    polling:
+      enabled: true
+      timeout: 30
+      limit: 100

@@ -13,6 +13,8 @@ Java Telegram Bot framework (multi-module, Java 21, Gradle).
   - thin Spring Boot adapter над core
 - `telegram-bot-framework-demo`
   - пример приложения
+- `telegram-bot-framework-screen-demo`
+  - отдельный пример экранного API (screen stack + widgets)
 - `telegram-bot-framework-botapi-generator`
   - tooling-only генератор DTO/method scaffolding
 - `telegram-bot-framework-testkit`
@@ -200,6 +202,12 @@ telegram:
 ./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling,cloud'
 ./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling,local'
 ./gradlew :telegram-bot-framework-demo:test --tests '*DemoFakeModeIntegrationTest'
+```
+
+`telegram-bot-framework-screen-demo`:
+
+```bash
+BOT_TOKEN=<your_token> ./gradlew :telegram-bot-framework-screen-demo:bootRun
 ```
 
 ## Публикация в Maven Central (через GitLab CI + JReleaser)

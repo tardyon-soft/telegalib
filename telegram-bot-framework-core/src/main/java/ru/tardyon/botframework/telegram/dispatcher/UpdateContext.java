@@ -314,6 +314,10 @@ public final class UpdateContext {
         return new TelegramCallbackQuery(callbackQuery, telegramApiClient);
     }
 
+    public TelegramApiClient telegramApiClient() {
+        return telegramApiClient;
+    }
+
     public void setAttribute(String key, Object value) {
         Objects.requireNonNull(key, "key must not be null");
         if (value == null) {
