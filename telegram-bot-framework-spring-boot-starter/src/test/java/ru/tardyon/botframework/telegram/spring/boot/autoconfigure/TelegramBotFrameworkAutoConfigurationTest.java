@@ -108,11 +108,37 @@ class TelegramBotFrameworkAutoConfigurationTest {
             .run(context -> assertThat(context).doesNotHaveBean(TelegramWebhookController.class));
     }
 
+    @Test
+    void keepsManualRouterWiringWhenCustomRouterBeanProvided() {
+        contextRunner
+            .withUserConfiguration(CustomRouterConfiguration.class)
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false"
+            )
+            .run(context -> {
+                Router router = context.getBean(Router.class);
+                assertThat(router).isInstanceOf(CustomRouter.class);
+            });
+    }
+
     @Configuration(proxyBeanMethods = false)
     static class TestMiddlewareConfiguration {
         @Bean
         UpdateMiddleware testMiddleware() {
             return (context, chain) -> chain.proceed(context);
         }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class CustomRouterConfiguration {
+        @Bean
+        Router customRouter() {
+            return new CustomRouter();
+        }
+    }
+
+    static class CustomRouter extends Router {
     }
 }
