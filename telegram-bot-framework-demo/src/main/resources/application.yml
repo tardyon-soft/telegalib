@@ -11,6 +11,12 @@ telegram:
         - callback_query
         - inline_query
         - chosen_inline_result
+        - shipping_query
+        - pre_checkout_query
+        - business_connection
+        - business_message
+        - edited_business_message
+        - deleted_business_messages
     webhook:
       enabled: false
       path: /telegram/webhook
@@ -31,6 +37,12 @@ telegram:
         - callback_query
         - inline_query
         - chosen_inline_result
+        - shipping_query
+        - pre_checkout_query
+        - business_connection
+        - business_message
+        - edited_business_message
+        - deleted_business_messages
     webhook:
       enabled: false
 
@@ -50,6 +62,12 @@ telegram:
         - callback_query
         - inline_query
         - chosen_inline_result
+        - shipping_query
+        - pre_checkout_query
+        - business_connection
+        - business_message
+        - edited_business_message
+        - deleted_business_messages
     webhook:
       enabled: true
       path: /telegram/webhook

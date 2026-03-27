@@ -6,8 +6,13 @@ import java.util.List;
 import org.springframework.util.StringUtils;
 import ru.tardyon.botframework.telegram.api.TelegramApiClient;
 import ru.tardyon.botframework.telegram.api.file.InputFile;
+import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
+import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMediaGroupRequest;
@@ -15,6 +20,8 @@ import ru.tardyon.botframework.telegram.api.model.CallbackQuery;
 import ru.tardyon.botframework.telegram.api.model.ChosenInlineResult;
 import ru.tardyon.botframework.telegram.api.model.InlineQuery;
 import ru.tardyon.botframework.telegram.api.model.Message;
+import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
+import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResultArticle;
@@ -25,20 +32,33 @@ import ru.tardyon.botframework.telegram.api.model.markup.Keyboards;
 import ru.tardyon.botframework.telegram.api.model.markup.SwitchInlineQueryChosenChat;
 import ru.tardyon.botframework.telegram.api.model.media.MediaGroups;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButtons;
+import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
+import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
+import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
+import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
+import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
+import ru.tardyon.botframework.telegram.api.model.webapp.WebAppData;
+import ru.tardyon.botframework.telegram.api.model.webapp.WebAppInfo;
 import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramMessage;
 import ru.tardyon.botframework.telegram.dispatcher.UpdateContext;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.BotController;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.OnBusinessConnection;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.OnBusinessMessage;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.OnDeletedBusinessMessages;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnCallbackQuery;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnChosenInlineResult;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnInlineQuery;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnMessage;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.OnPreCheckoutQuery;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.OnShippingQuery;
 
 @BotController
 public class Stage3DemoController {
 
     private static final String STATE_AWAITING_NAME = "form.awaiting_name";
     private static final String STATE_AWAITING_LANGUAGE = "form.awaiting_language";
+    private static final String BUY_TEST_PAYLOAD = "demo:buy-test";
 
     private final TelegramApiClient telegramApiClient;
 
@@ -63,9 +83,12 @@ public class Stage3DemoController {
             .build();
 
         telegramMessage.reply(
-            "Stage 3 demo:\n" +
+            "Stage 4 demo:\n" +
                 "/startform - FSM диалог\n" +
                 "/commands-init - регистрация команд\n" +
+                "/buy-test - отправить invoice\n" +
+                "/webapp - reply keyboard с web_app\n" +
+                "/prepared-inline-test - savePreparedInlineMessage\n" +
                 "/albumtest - media group\n" +
                 "/menubutton-init - menu button\n" +
                 "Нажми inline-кнопки ниже для inline mode сценариев.",
@@ -80,6 +103,9 @@ public class Stage3DemoController {
                 List.of(
                     new BotCommand("start", "Stage 3 demo menu"),
                     new BotCommand("startform", "Start FSM form"),
+                    new BotCommand("buy-test", "Send demo invoice"),
+                    new BotCommand("webapp", "Send web app keyboard"),
+                    new BotCommand("prepared-inline-test", "Create prepared inline message"),
                     new BotCommand("albumtest", "Send media group album"),
                     new BotCommand("menubutton-init", "Configure chat menu button")
                 ),
@@ -88,6 +114,53 @@ public class Stage3DemoController {
             )
         );
         telegramMessage.reply("Команды зарегистрированы.");
+    }
+
+    @OnMessage(command = "buy-test")
+    public void onBuyTest(Message message, TelegramMessage telegramMessage) {
+        boolean starsMode = Boolean.parseBoolean(System.getenv("DEMO_STARS_MODE"));
+        String providerToken = System.getenv("PAYMENT_PROVIDER_TOKEN");
+
+        if (!starsMode && !StringUtils.hasText(providerToken)) {
+            telegramMessage.reply("Для non-Stars invoice укажи PAYMENT_PROVIDER_TOKEN или включи DEMO_STARS_MODE=true.");
+            return;
+        }
+
+        List<LabeledPrice> prices = starsMode
+            ? List.of(new LabeledPrice("Demo Stars item", 1))
+            : List.of(new LabeledPrice("Demo product", 500), new LabeledPrice("Delivery placeholder", 0));
+
+        SendInvoiceRequest request = new SendInvoiceRequest(
+            message.chat().id(),
+            starsMode ? "Demo Stars invoice" : "Demo physical invoice",
+            starsMode
+                ? "Тестовый счет в Telegram Stars (XTR)."
+                : "Тестовый счет с shipping/pre_checkout flow.",
+            BUY_TEST_PAYLOAD,
+            starsMode ? null : providerToken,
+            starsMode ? "XTR" : "USD",
+            prices,
+            null,
+            null,
+            "buy-test",
+            null,
+            null,
+            null,
+            null,
+            null,
+            starsMode ? null : Boolean.TRUE,
+            starsMode ? null : Boolean.FALSE,
+            starsMode ? null : Boolean.TRUE,
+            starsMode ? null : Boolean.TRUE,
+            starsMode ? null : Boolean.TRUE
+        );
+
+        telegramApiClient.sendInvoice(request);
+        telegramMessage.reply(
+            starsMode
+                ? "Stars invoice отправлен. Проверь payment flow в Telegram."
+                : "Invoice отправлен. Ожидаются shipping_query и pre_checkout_query."
+        );
     }
 
     @OnMessage(command = "startform")
@@ -192,6 +265,120 @@ public class Stage3DemoController {
         );
         var menuButton = telegramApiClient.getChatMenuButton(new GetChatMenuButtonRequest(message.chat().id()));
         telegramMessage.reply("Menu button configured. Current type: " + menuButton.type());
+    }
+
+    @OnMessage(command = "webapp")
+    public void onWebApp(TelegramMessage telegramMessage) {
+        String webAppUrl = System.getenv("DEMO_WEB_APP_URL");
+        if (!StringUtils.hasText(webAppUrl)) {
+            telegramMessage.reply("Укажи DEMO_WEB_APP_URL=https://... чтобы отправить web_app keyboard.");
+            return;
+        }
+        telegramMessage.reply(
+            "Нажми кнопку ниже, чтобы открыть Mini App.",
+            Keyboards.replyKeyboard()
+                .rowButtons(Keyboards.replyWebAppButton("Open Mini App", new WebAppInfo(webAppUrl)))
+                .build()
+        );
+    }
+
+    @OnMessage(command = "prepared-inline-test")
+    public void onPreparedInlineTest(Message message, TelegramMessage telegramMessage) {
+        if (message.from() == null) {
+            telegramMessage.reply("Не удалось определить user id для savePreparedInlineMessage.");
+            return;
+        }
+        PreparedInlineMessage prepared = telegramApiClient.savePreparedInlineMessage(
+            new SavePreparedInlineMessageRequest(
+                message.from().id(),
+                new InlineQueryResultArticle(
+                    "prepared-demo-" + message.messageId(),
+                    "Prepared demo article",
+                    InputTextMessageContent.of("Prepared inline message from demo")
+                ),
+                Boolean.TRUE,
+                Boolean.TRUE,
+                Boolean.TRUE,
+                Boolean.FALSE
+            )
+        );
+        telegramMessage.reply("Prepared inline message id: " + prepared.id());
+    }
+
+    @OnMessage(webAppDataPresent = true)
+    public void onWebAppData(Message message, WebAppData webAppData, TelegramMessage telegramMessage) {
+        String payload = webAppData != null ? webAppData.data() : null;
+        String normalizedPayload = StringUtils.hasText(payload) ? payload : "<empty>";
+        telegramMessage.reply("Получен web_app_data: " + normalizedPayload);
+    }
+
+    @OnShippingQuery
+    public void onShippingQuery(ShippingQuery query) {
+        if (!BUY_TEST_PAYLOAD.equals(query.invoicePayload())) {
+            telegramApiClient.answerShippingQuery(
+                new AnswerShippingQueryRequest(query.id(), Boolean.FALSE, null, "Unsupported invoice payload")
+            );
+            return;
+        }
+
+        telegramApiClient.answerShippingQuery(
+            new AnswerShippingQueryRequest(
+                query.id(),
+                Boolean.TRUE,
+                List.of(new ShippingOption("demo-pickup", "Demo pickup", List.of(new LabeledPrice("Pickup", 0)))),
+                null
+            )
+        );
+    }
+
+    @OnPreCheckoutQuery
+    public void onPreCheckoutQuery(PreCheckoutQuery query) {
+        if (!BUY_TEST_PAYLOAD.equals(query.invoicePayload())) {
+            telegramApiClient.answerPreCheckoutQuery(
+                new AnswerPreCheckoutQueryRequest(query.id(), Boolean.FALSE, "Unsupported invoice payload")
+            );
+            return;
+        }
+        telegramApiClient.answerPreCheckoutQuery(new AnswerPreCheckoutQueryRequest(query.id(), Boolean.TRUE, null));
+    }
+
+    @OnBusinessConnection
+    public void onBusinessConnection(BusinessConnection connection) {
+        System.out.println(
+            "[demo-business] connection id=" + connection.id()
+                + " enabled=" + connection.isEnabled()
+                + " user=" + (connection.user() != null ? connection.user().id() : "unknown")
+        );
+    }
+
+    @OnBusinessMessage
+    public void onBusinessMessage(Message message) {
+        if (!StringUtils.hasText(message.businessConnectionId()) || message.chat() == null || message.messageId() == null) {
+            return;
+        }
+        telegramApiClient.readBusinessMessage(
+            new ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest(
+                message.businessConnectionId(),
+                message.chat().id(),
+                message.messageId()
+            )
+        );
+        telegramApiClient.sendMessage(
+            new SendMessageRequest(
+                message.chat().id(),
+                "Business message received by demo.",
+                null,
+                message.businessConnectionId()
+            )
+        );
+    }
+
+    @OnDeletedBusinessMessages
+    public void onDeletedBusinessMessages(BusinessMessagesDeleted deleted) {
+        System.out.println(
+            "[demo-business] deleted business messages connection=" + deleted.businessConnectionId()
+                + " ids=" + deleted.messageIds()
+        );
     }
 
     @OnInlineQuery

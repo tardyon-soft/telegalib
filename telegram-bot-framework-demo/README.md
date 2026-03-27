@@ -1,6 +1,6 @@
 # telegram-bot-framework-demo
 
-Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 3 scenarios, using annotation-driven API.
+Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 4 scenarios using annotation-driven API.
 
 ## What demo shows
 
@@ -10,32 +10,51 @@ Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 3 s
   - `@OnCallbackQuery`
   - `@OnInlineQuery`
   - `@OnChosenInlineResult`
-- FSM conversation:
-  - `/startform` -> asks name -> asks language -> completes and clears state
-- Advanced inline keyboard:
-  - callback button `menu:*`
-  - `switch_inline_query_current_chat`
-  - `switch_inline_query_chosen_chat`
-  - `copy_text`
-- Callback handling:
-  - `menu:*` -> `answer("OK")` + `editText(...)`
-- Inline mode:
-  - inline query answers with `InlineQueryResultArticle` + `InlineQueryResultPhoto`
-  - chosen inline result logging example
-- Media group:
-  - `/albumtest` with local uploads or `file_id` sources
-- Menu button:
-  - `/menubutton-init` -> `setChatMenuButton` + `getChatMenuButton`
-- Middleware:
-  - `UpdateMiddleware` logs update type and latency
+  - `@OnShippingQuery`
+  - `@OnPreCheckoutQuery`
+  - `@OnBusinessConnection`
+  - `@OnBusinessMessage`
+  - `@OnDeletedBusinessMessages`
+- Payments:
+  - `/buy-test` -> `sendInvoice`
+  - `shipping_query` -> `answerShippingQuery`
+  - `pre_checkout_query` -> `answerPreCheckoutQuery`
+- Mini Apps:
+  - `/webapp` -> reply keyboard with `web_app` button
+  - incoming service message with `web_app_data` handled by `@OnMessage(webAppDataPresent = true)`
+  - `/prepared-inline-test` -> `savePreparedInlineMessage`
+- Business updates:
+  - `business_connection` logging example
+  - `business_message` -> `readBusinessMessage` + demo reply via `business_connection_id`
+  - `deleted_business_messages` logging example
+- Stage 3 compatibility scenarios kept:
+  - FSM `/startform`
+  - callback `menu:*`
+  - inline mode examples
+  - media group `/albumtest`
+  - menu button `/menubutton-init`
 
-## Inline mode prerequisites
+## Stage 4 prerequisites
 
-Before testing inline queries:
+Payments:
+
+1. For regular invoice flow, configure provider token in BotFather and set `PAYMENT_PROVIDER_TOKEN`.
+2. For Telegram Stars demo, set `DEMO_STARS_MODE=true` (uses currency `XTR` in this demo).
+
+Mini Apps:
+
+1. Configure Mini App URL in BotFather for your bot.
+2. Set `DEMO_WEB_APP_URL` to your Mini App HTTPS URL.
+
+Business:
+
+1. Business updates require linked business connection and corresponding bot rights.
+2. Without business connection, business handlers may not receive updates.
+
+Inline mode:
 
 1. Enable inline mode for your bot in BotFather (`/setinline`).
-2. Optionally enable inline feedback if you want richer chosen-result analytics in BotFather.
-3. In Telegram chat, type `@your_bot_username <query>` to trigger inline query flow.
+2. Optionally enable inline feedback for chosen-result analytics.
 
 ## Environment variables
 
@@ -43,10 +62,16 @@ Required:
 
 - `BOT_TOKEN`
 
-Optional for webhook mode:
+Optional for polling/webhook:
 
 - `BOT_WEBHOOK_PUBLIC_URL`
 - `BOT_WEBHOOK_SECRET_TOKEN`
+
+Optional for Stage 4 demos:
+
+- `PAYMENT_PROVIDER_TOKEN`
+- `DEMO_STARS_MODE` (`true` for Stars invoice flow)
+- `DEMO_WEB_APP_URL`
 
 Optional for `/albumtest`:
 
@@ -73,9 +98,9 @@ export BOT_WEBHOOK_SECRET_TOKEN=super-secret
 ./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=webhook'
 ```
 
-Webhook endpoint path by default: `/telegram/webhook`.
+Default webhook endpoint path: `/telegram/webhook`.
 
 ## Notes
 
-- Demo is only usage example; library runtime remains in `core`/`starter`.
-- No production deployment hardening is included.
+- Demo stays as usage example only; runtime logic remains in `core` and `starter`.
+- No DB/Redis/Docker/production billing logic/secret vaulting is included.
