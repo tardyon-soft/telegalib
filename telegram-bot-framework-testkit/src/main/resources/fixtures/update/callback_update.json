@@ -1,0 +1,22 @@
+{
+  "update_id": 5001,
+  "callback_query": {
+    "id": "cbq-fixture-1",
+    "chat_instance": "fixture-chat-instance",
+    "data": "menu:root",
+    "from": {
+      "id": 10001,
+      "is_bot": false,
+      "first_name": "FixtureUser"
+    },
+    "message": {
+      "message_id": 99,
+      "date": 1710000000,
+      "text": "Choose",
+      "chat": {
+        "id": 10001,
+        "type": "private"
+      }
+    }
+  }
+}
