@@ -1,0 +1,46 @@
+telegram:
+  bot:
+    token: ${BOT_TOKEN}
+    mode: polling
+    polling:
+      enabled: true
+      timeout: 30
+      limit: 100
+      allowed-updates:
+        - message
+        - callback_query
+    webhook:
+      enabled: false
+      path: /telegram/webhook
+
+---
+spring:
+  config:
+    activate:
+      on-profile: polling
+
+telegram:
+  bot:
+    mode: polling
+    polling:
+      enabled: true
+    webhook:
+      enabled: false
+
+---
+spring:
+  config:
+    activate:
+      on-profile: webhook
+
+telegram:
+  bot:
+    mode: webhook
+    polling:
+      enabled: false
+    webhook:
+      enabled: true
+      path: /telegram/webhook
+      public-url: ${BOT_WEBHOOK_PUBLIC_URL}
+      secret-token: ${BOT_WEBHOOK_SECRET_TOKEN:}
+      drop-pending-updates: true
