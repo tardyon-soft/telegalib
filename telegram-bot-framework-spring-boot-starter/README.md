@@ -5,6 +5,9 @@ Thin Spring Boot integration layer over `telegram-bot-framework-core`.
 ## What it configures
 
 - `TelegramApiClient`
+- `BotApiTransportProfile`
+- `DiagnosticsHooks`
+- `BotApiCapabilities` (declared profile bean)
 - `LongPollingOptions`
 - `LongPollingRunner`
 - `Router`
@@ -32,6 +35,25 @@ telegram:
         - callback_query
 ```
 
+## Transport profile (cloud/local)
+
+```yaml
+telegram:
+  bot:
+    transport:
+      mode: cloud
+      # base-url: https://api.telegram.org
+```
+
+```yaml
+telegram:
+  bot:
+    transport:
+      mode: local
+      base-url: http://127.0.0.1:8081
+      local-file-uri-upload-enabled: true
+```
+
 ## Webhook mode (`application.yml`)
 
 ```yaml
@@ -45,6 +67,32 @@ telegram:
       public-url: https://example.com
       secret-token: ${BOT_WEBHOOK_SECRET}
       drop-pending-updates: true
+```
+
+## Diagnostics listener registration
+
+```java
+@Configuration
+class DiagnosticsConfig {
+    @Bean
+    BotApiRequestListener requestLogger() {
+        return event -> System.out.println("API -> " + event.methodName() + " " + event.correlationId());
+    }
+
+    @Bean
+    BotApiResponseListener responseLogger() {
+        return event -> System.out.println("API <- " + event.methodName() + " ok=" + event.success() + " in " + event.durationMillis() + " ms");
+    }
+}
+```
+
+Optional toggle:
+
+```yaml
+telegram:
+  bot:
+    diagnostics:
+      enabled: true
 ```
 
 ## Usage

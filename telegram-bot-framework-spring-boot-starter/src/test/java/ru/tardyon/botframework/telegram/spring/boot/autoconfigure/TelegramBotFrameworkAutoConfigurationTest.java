@@ -8,6 +8,11 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import ru.tardyon.botframework.telegram.api.capability.BotApiCapabilities;
+import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode;
+import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile;
+import ru.tardyon.botframework.telegram.diagnostics.BotApiRequestListener;
+import ru.tardyon.botframework.telegram.diagnostics.DiagnosticsHooks;
 import ru.tardyon.botframework.telegram.api.TelegramApiClient;
 import ru.tardyon.botframework.telegram.bot.TelegramBot;
 import ru.tardyon.botframework.telegram.dispatcher.DefaultDispatcher;
@@ -53,6 +58,9 @@ class TelegramBotFrameworkAutoConfigurationTest {
                 assertThat(context).hasSingleBean(WebAppInitDataValidator.class);
                 assertThat(context).hasSingleBean(TelegramMonetizationOperations.class);
                 assertThat(context).hasSingleBean(TelegramBusinessOperations.class);
+                assertThat(context).hasSingleBean(BotApiTransportProfile.class);
+                assertThat(context).hasSingleBean(DiagnosticsHooks.class);
+                assertThat(context).hasSingleBean(BotApiCapabilities.class);
             });
     }
 
@@ -129,6 +137,56 @@ class TelegramBotFrameworkAutoConfigurationTest {
             });
     }
 
+    @Test
+    void bindsTransportLocalProperties() {
+        contextRunner
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false",
+                "telegram.bot.transport.mode=local",
+                "telegram.bot.transport.base-url=http://127.0.0.1:9081",
+                "telegram.bot.transport.local-file-uri-upload-enabled=false"
+            )
+            .run(context -> {
+                BotApiTransportProfile profile = context.getBean(BotApiTransportProfile.class);
+                assertThat(profile.mode()).isEqualTo(BotApiTransportMode.LOCAL);
+                assertThat(profile.baseUrl()).isEqualTo("http://127.0.0.1:9081");
+                assertThat(profile.localFileUriUploadEnabled()).isFalse();
+            });
+    }
+
+    @Test
+    void disablesDiagnosticsHooksWhenConfigured() {
+        contextRunner
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false",
+                "telegram.bot.diagnostics.enabled=false"
+            )
+            .run(context -> {
+                DiagnosticsHooks hooks = context.getBean(DiagnosticsHooks.class);
+                assertThat(hooks).isSameAs(DiagnosticsHooks.noop());
+            });
+    }
+
+    @Test
+    void collectsDiagnosticsListenersFromContext() {
+        contextRunner
+            .withUserConfiguration(DiagnosticsConfiguration.class)
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false"
+            )
+            .run(context -> {
+                DiagnosticsHooks hooks = context.getBean(DiagnosticsHooks.class);
+                assertThat(hooks).isNotNull();
+                assertThat(hooks).isNotSameAs(DiagnosticsHooks.noop());
+            });
+    }
+
     @Configuration(proxyBeanMethods = false)
     static class TestMiddlewareConfiguration {
         @Bean
@@ -142,6 +200,15 @@ class TelegramBotFrameworkAutoConfigurationTest {
         @Bean
         Router customRouter() {
             return new CustomRouter();
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class DiagnosticsConfiguration {
+        @Bean
+        BotApiRequestListener testRequestListener() {
+            return event -> {
+            };
         }
     }
 

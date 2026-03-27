@@ -3,6 +3,8 @@ package ru.tardyon.botframework.telegram.spring.boot.properties;
 import java.util.List;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.StringUtils;
+import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode;
+import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile;
 
 @ConfigurationProperties(prefix = "telegram.bot")
 public class TelegramBotFrameworkProperties {
@@ -12,6 +14,8 @@ public class TelegramBotFrameworkProperties {
     private final Polling polling = new Polling();
     private final Webhook webhook = new Webhook();
     private final WebApp webApp = new WebApp();
+    private final Transport transport = new Transport();
+    private final Diagnostics diagnostics = new Diagnostics();
 
     public enum Mode {
         POLLING,
@@ -44,6 +48,14 @@ public class TelegramBotFrameworkProperties {
 
     public WebApp getWebApp() {
         return webApp;
+    }
+
+    public Transport getTransport() {
+        return transport;
+    }
+
+    public Diagnostics getDiagnostics() {
+        return diagnostics;
     }
 
     public boolean isWebhookMode() {
@@ -176,6 +188,60 @@ public class TelegramBotFrameworkProperties {
 
         public void setInitDataMaxAgeSeconds(Long initDataMaxAgeSeconds) {
             this.initDataMaxAgeSeconds = initDataMaxAgeSeconds;
+        }
+    }
+
+    public static class Transport {
+
+        private BotApiTransportMode mode = BotApiTransportMode.CLOUD;
+        private String baseUrl;
+        private boolean localFileUriUploadEnabled = true;
+
+        public BotApiTransportMode getMode() {
+            return mode;
+        }
+
+        public void setMode(BotApiTransportMode mode) {
+            this.mode = mode;
+        }
+
+        public String getBaseUrl() {
+            return baseUrl;
+        }
+
+        public void setBaseUrl(String baseUrl) {
+            this.baseUrl = baseUrl;
+        }
+
+        public boolean isLocalFileUriUploadEnabled() {
+            return localFileUriUploadEnabled;
+        }
+
+        public void setLocalFileUriUploadEnabled(boolean localFileUriUploadEnabled) {
+            this.localFileUriUploadEnabled = localFileUriUploadEnabled;
+        }
+
+        public String resolveBaseUrl() {
+            if (StringUtils.hasText(baseUrl)) {
+                return baseUrl.trim();
+            }
+            if (mode == BotApiTransportMode.LOCAL) {
+                return "http://127.0.0.1:8081";
+            }
+            return BotApiTransportProfile.DEFAULT_CLOUD_BASE_URL;
+        }
+    }
+
+    public static class Diagnostics {
+
+        private boolean enabled = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
         }
     }
 }
