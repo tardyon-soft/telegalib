@@ -10,6 +10,7 @@ import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.markup.InlineKeyboardMarkup;
 import ru.tardyon.botframework.telegram.api.model.markup.ReplyMarkup;
 import ru.tardyon.botframework.telegram.dispatcher.UpdateContext;
+import ru.tardyon.botframework.telegram.exception.TelegramApiException;
 
 public final class DefaultTelegramScreenViewRenderer implements ScreenViewRenderer {
 
@@ -25,15 +26,23 @@ public final class DefaultTelegramScreenViewRenderer implements ScreenViewRender
         }
 
         if (view.photo() != null) {
-            Message sentPhoto = apiClient.sendPhoto(new SendPhotoRequest(
-                chatId,
-                view.photo(),
-                normalizeCaption(view.text()),
-                view.replyMarkup()
-            ));
-            if (sentPhoto != null && sentPhoto.messageId() != null) {
-                screenStateContext.setRenderedMessageId(sentPhoto.messageId());
-                screenStateContext.setRenderedMessageKind(ScreenStack.RenderedMessageKind.PHOTO);
+            try {
+                Message sentPhoto = apiClient.sendPhoto(new SendPhotoRequest(
+                    chatId,
+                    view.photo(),
+                    normalizeCaption(view.text()),
+                    view.replyMarkup()
+                ));
+                if (sentPhoto != null && sentPhoto.messageId() != null) {
+                    screenStateContext.setRenderedMessageId(sentPhoto.messageId());
+                    screenStateContext.setRenderedMessageKind(ScreenStack.RenderedMessageKind.PHOTO);
+                }
+            } catch (TelegramApiException ex) {
+                Message fallback = apiClient.sendMessage(new SendMessageRequest(chatId, view.text(), view.replyMarkup(), null));
+                if (fallback != null && fallback.messageId() != null) {
+                    screenStateContext.setRenderedMessageId(fallback.messageId());
+                    screenStateContext.setRenderedMessageKind(ScreenStack.RenderedMessageKind.TEXT);
+                }
             }
             return;
         }
