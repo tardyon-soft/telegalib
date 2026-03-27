@@ -74,3 +74,20 @@ telegram:
       public-url: ${BOT_WEBHOOK_PUBLIC_URL}
       secret-token: ${BOT_WEBHOOK_SECRET_TOKEN:}
       drop-pending-updates: true
+
+demo:
+  stage5:
+    paid-media:
+      file-id: ${DEMO_PAID_MEDIA_FILE_ID:}
+      type: ${DEMO_PAID_MEDIA_TYPE:photo}
+      star-count: ${DEMO_PAID_MEDIA_STAR_COUNT:1}
+    gifts:
+      gift-id: ${DEMO_GIFT_ID:}
+      premium-month-count: ${DEMO_PREMIUM_MONTH_COUNT:3}
+    channel-subscription:
+      chat-id: ${DEMO_CHANNEL_CHAT_ID:}
+      name: ${DEMO_CHANNEL_SUB_NAME:Demo subscription}
+      price: ${DEMO_CHANNEL_SUB_PRICE:500}
+    business:
+      connection-id: ${DEMO_BUSINESS_CONNECTION_ID:}
+      story-file-id: ${DEMO_BUSINESS_STORY_FILE_ID:}

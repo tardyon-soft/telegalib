@@ -9,10 +9,16 @@ import ru.tardyon.botframework.telegram.api.file.InputFile;
 import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
+import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
+import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMediaGroupRequest;
@@ -33,6 +39,9 @@ import ru.tardyon.botframework.telegram.api.model.markup.SwitchInlineQueryChosen
 import ru.tardyon.botframework.telegram.api.model.media.MediaGroups;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButtons;
 import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
+import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMedia;
+import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaPhoto;
+import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaVideo;
 import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
@@ -52,6 +61,8 @@ import ru.tardyon.botframework.telegram.spring.boot.annotation.OnInlineQuery;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnMessage;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnPreCheckoutQuery;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnShippingQuery;
+import ru.tardyon.botframework.telegram.spring.boot.service.TelegramBusinessOperations;
+import ru.tardyon.botframework.telegram.spring.boot.service.TelegramMonetizationOperations;
 
 @BotController
 public class Stage3DemoController {
@@ -61,9 +72,17 @@ public class Stage3DemoController {
     private static final String BUY_TEST_PAYLOAD = "demo:buy-test";
 
     private final TelegramApiClient telegramApiClient;
+    private final TelegramMonetizationOperations monetizationOperations;
+    private final TelegramBusinessOperations businessOperations;
 
-    public Stage3DemoController(TelegramApiClient telegramApiClient) {
+    public Stage3DemoController(
+        TelegramApiClient telegramApiClient,
+        TelegramMonetizationOperations monetizationOperations,
+        TelegramBusinessOperations businessOperations
+    ) {
         this.telegramApiClient = telegramApiClient;
+        this.monetizationOperations = monetizationOperations;
+        this.businessOperations = businessOperations;
     }
 
     @OnMessage(command = "start")
@@ -91,6 +110,14 @@ public class Stage3DemoController {
                 "/prepared-inline-test - savePreparedInlineMessage\n" +
                 "/albumtest - media group\n" +
                 "/menubutton-init - menu button\n" +
+                "/paid-media-test - sendPaidMedia\n" +
+                "/stars-balance - balance + transactions\n" +
+                "/gift-test - sendGift\n" +
+                "/premium-gift-test - giftPremiumSubscription\n" +
+                "/channel-subscription-init - create subscription link\n" +
+                "/business-story-test - postStory\n" +
+                "/business-checklist-test - sendChecklist\n" +
+                "/business-gifts-test - getBusinessAccountGifts\n" +
                 "Нажми inline-кнопки ниже для inline mode сценариев.",
             inlineKeyboard
         );
@@ -199,6 +226,181 @@ public class Stage3DemoController {
         if (callback.message() != null) {
             callback.message().editText("Callback обработан: " + callbackQuery.data());
         }
+    }
+
+    @OnMessage(command = "paid-media-test")
+    public void onPaidMediaTest(Message message, TelegramMessage telegramMessage) {
+        String fileId = System.getenv("DEMO_PAID_MEDIA_FILE_ID");
+        if (!StringUtils.hasText(fileId)) {
+            telegramMessage.reply("Укажи DEMO_PAID_MEDIA_FILE_ID (photo/video file_id) для /paid-media-test.");
+            return;
+        }
+        int starCount = parseIntEnv("DEMO_PAID_MEDIA_STAR_COUNT", 1);
+        String type = System.getenv("DEMO_PAID_MEDIA_TYPE");
+
+        InputPaidMedia media = "video".equalsIgnoreCase(type)
+            ? InputPaidMediaVideo.of(InputFile.fileId(fileId))
+            : InputPaidMediaPhoto.of(InputFile.fileId(fileId));
+
+        monetizationOperations.sendPaidMedia(
+            new SendPaidMediaRequest(
+                null,
+                message.chat().id(),
+                starCount,
+                List.of(media),
+                "demo-paid-media",
+                "Demo paid media",
+                null,
+                null,
+                null,
+                null
+            )
+        );
+        telegramMessage.reply("Paid media отправлено. type=" + (type == null ? "photo" : type) + ", stars=" + starCount);
+    }
+
+    @OnMessage(command = "stars-balance")
+    public void onStarsBalance(TelegramMessage telegramMessage) {
+        var balance = monetizationOperations.getMyStarBalance();
+        var transactions = monetizationOperations.getStarTransactions(new GetStarTransactionsRequest(null, 5));
+        telegramMessage.reply(
+            "Stars balance: " + balance.amount() + "\n" +
+                "Nanostars: " + (balance.nanostarAmount() == null ? 0 : balance.nanostarAmount()) + "\n" +
+                "Recent transactions: " + transactions.transactions().size() + "\n" +
+                "Next offset: " + (transactions.nextOffset() == null ? "<none>" : transactions.nextOffset())
+        );
+    }
+
+    @OnMessage(command = "gift-test")
+    public void onGiftTest(Message message, TelegramMessage telegramMessage) {
+        String giftId = System.getenv("DEMO_GIFT_ID");
+        if (!StringUtils.hasText(giftId)) {
+            telegramMessage.reply("Укажи DEMO_GIFT_ID для /gift-test.");
+            return;
+        }
+        Long targetUserId = message.from() != null ? message.from().id() : null;
+        if (targetUserId == null) {
+            telegramMessage.reply("Не удалось определить user_id из update.");
+            return;
+        }
+        monetizationOperations.sendGift(new SendGiftRequest(targetUserId, null, giftId, true, "Demo gift", null, null));
+        telegramMessage.reply("Gift отправлен пользователю " + targetUserId + ".");
+    }
+
+    @OnMessage(command = "premium-gift-test")
+    public void onPremiumGiftTest(Message message, TelegramMessage telegramMessage) {
+        Long targetUserId = message.from() != null ? message.from().id() : null;
+        if (targetUserId == null) {
+            telegramMessage.reply("Не удалось определить user_id из update.");
+            return;
+        }
+        int monthCount = parseMonthCount(System.getenv("DEMO_PREMIUM_MONTH_COUNT"));
+        int starCount = monthCount == 3 ? 1000 : monthCount == 6 ? 1500 : 2500;
+        monetizationOperations.giftPremiumSubscription(
+            new GiftPremiumSubscriptionRequest(targetUserId, monthCount, starCount, "Demo premium gift", null, null)
+        );
+        telegramMessage.reply("Premium подарен: months=" + monthCount + ", stars=" + starCount + ".");
+    }
+
+    @OnMessage(command = "channel-subscription-init")
+    public void onChannelSubscriptionInit(TelegramMessage telegramMessage) {
+        String chatIdRaw = System.getenv("DEMO_CHANNEL_CHAT_ID");
+        if (!StringUtils.hasText(chatIdRaw)) {
+            telegramMessage.reply("Укажи DEMO_CHANNEL_CHAT_ID (например @channelusername) для /channel-subscription-init.");
+            return;
+        }
+        Object chatId = parseChatId(chatIdRaw);
+        int subscriptionPrice = parseIntEnv("DEMO_CHANNEL_SUB_PRICE", 500);
+        String linkName = System.getenv("DEMO_CHANNEL_SUB_NAME");
+        if (!StringUtils.hasText(linkName)) {
+            linkName = "Demo subscription";
+        }
+        var link = telegramApiClient.createChatSubscriptionInviteLink(
+            new CreateChatSubscriptionInviteLinkRequest(chatId, linkName, 2592000, subscriptionPrice)
+        );
+        telegramMessage.reply("Subscription invite link: " + link.inviteLink());
+    }
+
+    @OnMessage(command = "business-story-test")
+    public void onBusinessStoryTest(TelegramMessage telegramMessage) {
+        String businessConnectionId = System.getenv("DEMO_BUSINESS_CONNECTION_ID");
+        String storyPhotoFileId = System.getenv("DEMO_BUSINESS_STORY_FILE_ID");
+        if (!StringUtils.hasText(businessConnectionId) || !StringUtils.hasText(storyPhotoFileId)) {
+            telegramMessage.reply("Укажи DEMO_BUSINESS_CONNECTION_ID и DEMO_BUSINESS_STORY_FILE_ID для /business-story-test.");
+            return;
+        }
+        var story = businessOperations.postStory(
+            new ru.tardyon.botframework.telegram.api.method.PostStoryRequest(
+                businessConnectionId,
+                ru.tardyon.botframework.telegram.api.model.story.InputStoryContentPhoto.of(InputFile.fileId(storyPhotoFileId)),
+                86400,
+                "Demo business story",
+                null,
+                null,
+                null,
+                null,
+                null
+            )
+        );
+        telegramMessage.reply("Business story posted. id=" + story.id());
+    }
+
+    @OnMessage(command = "business-checklist-test")
+    public void onBusinessChecklistTest(Message message, TelegramMessage telegramMessage) {
+        String businessConnectionId = System.getenv("DEMO_BUSINESS_CONNECTION_ID");
+        if (!StringUtils.hasText(businessConnectionId)) {
+            telegramMessage.reply("Укажи DEMO_BUSINESS_CONNECTION_ID для /business-checklist-test.");
+            return;
+        }
+        var checklist = new ru.tardyon.botframework.telegram.api.model.checklist.InputChecklist(
+            "Stage 5 demo checklist",
+            null,
+            null,
+            List.of(
+                new ru.tardyon.botframework.telegram.api.model.checklist.InputChecklistTask(1, "Review Stars balance", null, null),
+                new ru.tardyon.botframework.telegram.api.model.checklist.InputChecklistTask(2, "Check gifts queue", null, null)
+            ),
+            true,
+            true
+        );
+        businessOperations.sendChecklist(
+            new ru.tardyon.botframework.telegram.api.method.SendChecklistRequest(
+                businessConnectionId,
+                message.chat().id(),
+                checklist,
+                null,
+                null,
+                null,
+                null,
+                null
+            )
+        );
+        telegramMessage.reply("Business checklist отправлен.");
+    }
+
+    @OnMessage(command = "business-gifts-test")
+    public void onBusinessGiftsTest(TelegramMessage telegramMessage) {
+        String businessConnectionId = System.getenv("DEMO_BUSINESS_CONNECTION_ID");
+        if (!StringUtils.hasText(businessConnectionId)) {
+            telegramMessage.reply("Укажи DEMO_BUSINESS_CONNECTION_ID для /business-gifts-test.");
+            return;
+        }
+        var gifts = businessOperations.getBusinessAccountGifts(
+            new GetBusinessAccountGiftsRequest(
+                businessConnectionId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                true,
+                null,
+                10
+            )
+        );
+        telegramMessage.reply("Business gifts total=" + gifts.totalCount() + ", returned=" + gifts.gifts().size());
     }
 
     @OnMessage(command = "albumtest")
@@ -418,5 +620,52 @@ public class Stage3DemoController {
                 + " query=" + chosenInlineResult.query()
                 + " from=" + (chosenInlineResult.from() != null ? chosenInlineResult.from().id() : "unknown")
         );
+    }
+
+    @OnMessage(giftPresent = true)
+    public void onGiftServiceMessage(ru.tardyon.botframework.telegram.api.model.payment.GiftInfo giftInfo) {
+        System.out.println("[demo-stage5] gift service message received giftId=" + (giftInfo.gift() != null ? giftInfo.gift().id() : "unknown"));
+    }
+
+    @OnBusinessMessage(refundedPaymentPresent = true)
+    public void onBusinessRefundedPayment(ru.tardyon.botframework.telegram.api.model.payment.RefundedPayment refundedPayment) {
+        System.out.println("[demo-stage5] business refunded payment chargeId=" + refundedPayment.telegramPaymentChargeId());
+    }
+
+    private static Object parseChatId(String raw) {
+        if (raw.startsWith("@")) {
+            return raw;
+        }
+        try {
+            return Long.parseLong(raw);
+        } catch (NumberFormatException e) {
+            return raw;
+        }
+    }
+
+    private static int parseIntEnv(String key, int fallback) {
+        String value = System.getenv(key);
+        if (!StringUtils.hasText(value)) {
+            return fallback;
+        }
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private static int parseMonthCount(String raw) {
+        if (!StringUtils.hasText(raw)) {
+            return 3;
+        }
+        try {
+            int value = Integer.parseInt(raw.trim());
+            if (value == 3 || value == 6 || value == 12) {
+                return value;
+            }
+        } catch (NumberFormatException ignored) {
+        }
+        return 3;
     }
 }
