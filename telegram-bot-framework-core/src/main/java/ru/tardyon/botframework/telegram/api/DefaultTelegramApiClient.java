@@ -21,6 +21,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Objects;
 import ru.tardyon.botframework.telegram.api.method.AnswerCallbackQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
@@ -29,6 +31,7 @@ import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
+import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
@@ -127,6 +130,23 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     @Override
     public boolean answerInlineQuery(AnswerInlineQueryRequest request) {
         Boolean result = invoke("answerInlineQuery", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public Message sendInvoice(SendInvoiceRequest request) {
+        return invoke("sendInvoice", requireRequest(request), objectMapper.getTypeFactory().constructType(Message.class));
+    }
+
+    @Override
+    public boolean answerShippingQuery(AnswerShippingQueryRequest request) {
+        Boolean result = invoke("answerShippingQuery", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean answerPreCheckoutQuery(AnswerPreCheckoutQueryRequest request) {
+        Boolean result = invoke("answerPreCheckoutQuery", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
     }
 

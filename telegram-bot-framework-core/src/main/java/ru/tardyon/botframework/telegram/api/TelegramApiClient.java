@@ -4,6 +4,8 @@ import java.nio.file.Path;
 import java.util.List;
 import ru.tardyon.botframework.telegram.api.method.AnswerCallbackQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
@@ -12,6 +14,7 @@ import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
+import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
@@ -45,6 +48,15 @@ public interface TelegramApiClient {
     boolean answerCallbackQuery(AnswerCallbackQueryRequest request);
 
     boolean answerInlineQuery(AnswerInlineQueryRequest request);
+
+    Message sendInvoice(SendInvoiceRequest request);
+
+    boolean answerShippingQuery(AnswerShippingQueryRequest request);
+
+    /**
+     * The Telegram Bot API requires this method to be called within 10 seconds after receiving a pre_checkout_query update.
+     */
+    boolean answerPreCheckoutQuery(AnswerPreCheckoutQueryRequest request);
 
     boolean setMyCommands(SetMyCommandsRequest request);
 

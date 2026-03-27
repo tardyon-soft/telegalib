@@ -9,6 +9,8 @@ import ru.tardyon.botframework.telegram.api.model.CallbackQuery;
 import ru.tardyon.botframework.telegram.api.model.Chat;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.User;
+import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
+import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
 import ru.tardyon.botframework.telegram.dispatcher.command.CommandContext;
 import ru.tardyon.botframework.telegram.dispatcher.command.CommandParser;
 import ru.tardyon.botframework.telegram.fsm.State;
@@ -116,6 +118,16 @@ public final class Filters {
         return callbackQuery -> callbackQuery != null
             && callbackQuery.data() != null
             && callbackQuery.data().startsWith(prefix);
+    }
+
+    public static Filter<ShippingQuery> invoicePayloadEquals(String payload) {
+        Objects.requireNonNull(payload, "payload must not be null");
+        return shippingQuery -> shippingQuery != null && payload.equals(shippingQuery.invoicePayload());
+    }
+
+    public static Filter<PreCheckoutQuery> preCheckoutPayloadEquals(String payload) {
+        Objects.requireNonNull(payload, "payload must not be null");
+        return preCheckoutQuery -> preCheckoutQuery != null && payload.equals(preCheckoutQuery.invoicePayload());
     }
 
     public static <E> ContextFilter<E> stateEquals(String state) {

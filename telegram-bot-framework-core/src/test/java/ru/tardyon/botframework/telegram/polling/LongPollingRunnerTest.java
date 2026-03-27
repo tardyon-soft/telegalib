@@ -156,6 +156,21 @@ class LongPollingRunnerTest {
         }
 
         @Override
+        public Message sendInvoice(ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean answerShippingQuery(ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean answerPreCheckoutQuery(ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public boolean setWebhook(SetWebhookRequest request) {
             throw new UnsupportedOperationException();
         }
@@ -279,6 +294,21 @@ class LongPollingRunnerTest {
 
         @Override
         public boolean answerInlineQuery(AnswerInlineQueryRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Message sendInvoice(ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean answerShippingQuery(ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean answerPreCheckoutQuery(ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest request) {
             throw new UnsupportedOperationException();
         }
 

@@ -22,9 +22,12 @@ import javax.net.ssl.SSLSession;
 import org.junit.jupiter.api.Test;
 import ru.tardyon.botframework.telegram.api.file.InputFile;
 import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
@@ -37,6 +40,8 @@ import ru.tardyon.botframework.telegram.api.model.inline.InputTextMessageContent
 import ru.tardyon.botframework.telegram.api.model.markup.Keyboards;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButtons;
+import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
+import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
 
 class DefaultTelegramApiClientStage2MethodsTest {
 
@@ -158,6 +163,84 @@ class DefaultTelegramApiClientStage2MethodsTest {
         assertTrue(body.contains("\"inline_query_id\":\"iq-1\""));
         assertTrue(body.contains("\"results\""));
         assertTrue(body.contains("\"type\":\"article\""));
+    }
+
+    @Test
+    void sendInvoiceUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"message_id":101,"chat":{"id":123,"type":"private"},"date":1}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        client.sendInvoice(
+            new SendInvoiceRequest(
+                123L,
+                "Pro plan",
+                "Monthly subscription",
+                "invoice:pro:monthly",
+                "provider-token",
+                "USD",
+                List.of(new LabeledPrice("Pro", 499)),
+                null,
+                null,
+                "start-pro",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
+            )
+        );
+
+        assertEquals("/bottoken/sendInvoice", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":123"));
+        assertTrue(body.contains("\"title\":\"Pro plan\""));
+        assertTrue(body.contains("\"currency\":\"USD\""));
+        assertTrue(body.contains("\"prices\":["));
+    }
+
+    @Test
+    void answerShippingQueryUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        boolean result = client.answerShippingQuery(
+            new AnswerShippingQueryRequest(
+                "ship-q-1",
+                true,
+                List.of(new ShippingOption("pickup", "Pickup", List.of(new LabeledPrice("Pickup", 0)))),
+                null
+            )
+        );
+
+        assertTrue(result);
+        assertEquals("/bottoken/answerShippingQuery", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"shipping_query_id\":\"ship-q-1\""));
+        assertTrue(body.contains("\"ok\":true"));
+        assertTrue(body.contains("\"shipping_options\""));
+    }
+
+    @Test
+    void answerPreCheckoutQueryUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        boolean result = client.answerPreCheckoutQuery(new AnswerPreCheckoutQueryRequest("pcq-1", true, null));
+
+        assertTrue(result);
+        assertEquals("/bottoken/answerPreCheckoutQuery", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"pre_checkout_query_id\":\"pcq-1\""));
+        assertTrue(body.contains("\"ok\":true"));
     }
 
     @Test

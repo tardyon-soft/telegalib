@@ -212,6 +212,121 @@ class DefaultTelegramApiClientParsingTest {
     }
 
     @Test
+    void parseGetUpdatesResponseWithShippingQuery() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 1005,
+                  "shipping_query": {
+                    "id": "ship-q-1",
+                    "invoice_payload": "invoice:basic",
+                    "from": {
+                      "id": 777,
+                      "is_bot": false,
+                      "first_name": "Alex"
+                    },
+                    "shipping_address": {
+                      "country_code": "US",
+                      "state": "CA",
+                      "city": "San Francisco",
+                      "street_line1": "Market st",
+                      "street_line2": "Suite 100",
+                      "post_code": "94103"
+                    }
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response =
+            DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        Update update = response.result().getFirst();
+        assertNotNull(update.shippingQuery());
+        assertEquals("ship-q-1", update.shippingQuery().id());
+        assertEquals("invoice:basic", update.shippingQuery().invoicePayload());
+        assertEquals("US", update.shippingQuery().shippingAddress().countryCode());
+    }
+
+    @Test
+    void parseGetUpdatesResponseWithPreCheckoutQuery() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 1006,
+                  "pre_checkout_query": {
+                    "id": "pcq-1",
+                    "currency": "XTR",
+                    "total_amount": 500,
+                    "invoice_payload": "stars:pro",
+                    "from": {
+                      "id": 777,
+                      "is_bot": false,
+                      "first_name": "Alex"
+                    }
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response =
+            DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        Update update = response.result().getFirst();
+        assertNotNull(update.preCheckoutQuery());
+        assertEquals("pcq-1", update.preCheckoutQuery().id());
+        assertEquals("XTR", update.preCheckoutQuery().currency());
+        assertEquals("stars:pro", update.preCheckoutQuery().invoicePayload());
+    }
+
+    @Test
+    void parseMessageWithSuccessfulPayment() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 1007,
+                  "message": {
+                    "message_id": 42,
+                    "date": 1710000000,
+                    "chat": { "id": 123456789, "type": "private" },
+                    "successful_payment": {
+                      "currency": "XTR",
+                      "total_amount": 500,
+                      "invoice_payload": "stars:pro",
+                      "telegram_payment_charge_id": "tg-charge-1",
+                      "provider_payment_charge_id": "provider-charge-1"
+                    }
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response =
+            DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        Update update = response.result().getFirst();
+        assertNotNull(update.message());
+        assertNotNull(update.message().successfulPayment());
+        assertEquals("XTR", update.message().successfulPayment().currency());
+        assertEquals("stars:pro", update.message().successfulPayment().invoicePayload());
+    }
+
+    @Test
     void parseEditMessageTextBooleanResult() {
         String raw = """
             {

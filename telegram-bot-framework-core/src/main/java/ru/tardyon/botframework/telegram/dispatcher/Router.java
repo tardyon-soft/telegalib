@@ -8,6 +8,8 @@ import ru.tardyon.botframework.telegram.api.model.CallbackQuery;
 import ru.tardyon.botframework.telegram.api.model.ChosenInlineResult;
 import ru.tardyon.botframework.telegram.api.model.InlineQuery;
 import ru.tardyon.botframework.telegram.api.model.Message;
+import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
+import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
 import ru.tardyon.botframework.telegram.dispatcher.filter.ContextFilter;
 import ru.tardyon.botframework.telegram.dispatcher.filter.Filter;
 import ru.tardyon.botframework.telegram.dispatcher.filter.Filters;
@@ -15,6 +17,8 @@ import ru.tardyon.botframework.telegram.dispatcher.handler.CallbackQueryHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.ChosenInlineResultHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.InlineQueryHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.MessageHandler;
+import ru.tardyon.botframework.telegram.dispatcher.handler.PreCheckoutQueryHandler;
+import ru.tardyon.botframework.telegram.dispatcher.handler.ShippingQueryHandler;
 
 public class Router {
 
@@ -26,6 +30,10 @@ public class Router {
     private final List<ContextInlineQueryRoute> contextInlineQueryRoutes = new CopyOnWriteArrayList<>();
     private final List<ChosenInlineResultRoute> chosenInlineResultRoutes = new CopyOnWriteArrayList<>();
     private final List<ContextChosenInlineResultRoute> contextChosenInlineResultRoutes = new CopyOnWriteArrayList<>();
+    private final List<ShippingQueryRoute> shippingQueryRoutes = new CopyOnWriteArrayList<>();
+    private final List<ContextShippingQueryRoute> contextShippingQueryRoutes = new CopyOnWriteArrayList<>();
+    private final List<PreCheckoutQueryRoute> preCheckoutQueryRoutes = new CopyOnWriteArrayList<>();
+    private final List<ContextPreCheckoutQueryRoute> contextPreCheckoutQueryRoutes = new CopyOnWriteArrayList<>();
     private final List<Router> includedRouters = new CopyOnWriteArrayList<>();
 
     public Router message(Filter<Message> filter, MessageHandler handler) {
@@ -108,6 +116,46 @@ public class Router {
         return this;
     }
 
+    public Router shippingQuery(Filter<ShippingQuery> filter, ShippingQueryHandler handler) {
+        shippingQueryRoutes.add(new ShippingQueryRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router shippingQuery(ShippingQueryHandler handler) {
+        return shippingQuery(Filters.any(), handler);
+    }
+
+    public Router shippingQuery(ContextFilter<ShippingQuery> filter, ShippingQueryHandler handler) {
+        contextShippingQueryRoutes.add(new ContextShippingQueryRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router preCheckoutQuery(Filter<PreCheckoutQuery> filter, PreCheckoutQueryHandler handler) {
+        preCheckoutQueryRoutes.add(new PreCheckoutQueryRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router preCheckoutQuery(PreCheckoutQueryHandler handler) {
+        return preCheckoutQuery(Filters.any(), handler);
+    }
+
+    public Router preCheckoutQuery(ContextFilter<PreCheckoutQuery> filter, PreCheckoutQueryHandler handler) {
+        contextPreCheckoutQueryRoutes.add(new ContextPreCheckoutQueryRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
     public Router include(Router router) {
         includedRouters.add(Objects.requireNonNull(router, "router must not be null"));
         return this;
@@ -124,6 +172,14 @@ public class Router {
         CallbackQuery callbackQuery = updateContext.getCallbackQuery();
         if (callbackQuery != null) {
             routeCallback(updateContext, callbackQuery);
+        }
+        ShippingQuery shippingQuery = updateContext.getShippingQuery();
+        if (shippingQuery != null) {
+            routeShippingQuery(updateContext, shippingQuery);
+        }
+        PreCheckoutQuery preCheckoutQuery = updateContext.getPreCheckoutQuery();
+        if (preCheckoutQuery != null) {
+            routePreCheckoutQuery(updateContext, preCheckoutQuery);
         }
         InlineQuery inlineQuery = updateContext.getInlineQuery();
         if (inlineQuery != null) {
@@ -207,6 +263,40 @@ public class Router {
         }
     }
 
+    private void routeShippingQuery(UpdateContext context, ShippingQuery shippingQuery) {
+        List<ShippingQueryHandler> matchedHandlers = new ArrayList<>();
+        for (ShippingQueryRoute route : shippingQueryRoutes) {
+            if (route.filter().test(shippingQuery)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (ContextShippingQueryRoute route : contextShippingQueryRoutes) {
+            if (route.filter().test(context, shippingQuery)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (ShippingQueryHandler matchedHandler : matchedHandlers) {
+            matchedHandler.handle(context, shippingQuery);
+        }
+    }
+
+    private void routePreCheckoutQuery(UpdateContext context, PreCheckoutQuery preCheckoutQuery) {
+        List<PreCheckoutQueryHandler> matchedHandlers = new ArrayList<>();
+        for (PreCheckoutQueryRoute route : preCheckoutQueryRoutes) {
+            if (route.filter().test(preCheckoutQuery)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (ContextPreCheckoutQueryRoute route : contextPreCheckoutQueryRoutes) {
+            if (route.filter().test(context, preCheckoutQuery)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (PreCheckoutQueryHandler matchedHandler : matchedHandlers) {
+            matchedHandler.handle(context, preCheckoutQuery);
+        }
+    }
+
     private record MessageRoute(Filter<Message> filter, MessageHandler handler) {
     }
 
@@ -231,6 +321,21 @@ public class Router {
     private record ContextChosenInlineResultRoute(
         ContextFilter<ChosenInlineResult> filter,
         ChosenInlineResultHandler handler
+    ) {
+    }
+
+    private record ShippingQueryRoute(Filter<ShippingQuery> filter, ShippingQueryHandler handler) {
+    }
+
+    private record ContextShippingQueryRoute(ContextFilter<ShippingQuery> filter, ShippingQueryHandler handler) {
+    }
+
+    private record PreCheckoutQueryRoute(Filter<PreCheckoutQuery> filter, PreCheckoutQueryHandler handler) {
+    }
+
+    private record ContextPreCheckoutQueryRoute(
+        ContextFilter<PreCheckoutQuery> filter,
+        PreCheckoutQueryHandler handler
     ) {
     }
 }

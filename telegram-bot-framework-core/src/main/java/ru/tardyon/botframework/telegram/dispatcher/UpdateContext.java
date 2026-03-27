@@ -10,6 +10,8 @@ import ru.tardyon.botframework.telegram.api.model.ChosenInlineResult;
 import ru.tardyon.botframework.telegram.api.model.InlineQuery;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.Update;
+import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
+import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramMessage;
 import ru.tardyon.botframework.telegram.dispatcher.command.CommandContext;
@@ -29,6 +31,8 @@ public final class UpdateContext {
         CHANNEL_POST,
         EDITED_CHANNEL_POST,
         CALLBACK_QUERY,
+        SHIPPING_QUERY,
+        PRE_CHECKOUT_QUERY,
         INLINE_QUERY,
         CHOSEN_INLINE_RESULT,
         UNSUPPORTED
@@ -38,6 +42,8 @@ public final class UpdateContext {
     private final UpdateType updateType;
     private final Message message;
     private final CallbackQuery callbackQuery;
+    private final ShippingQuery shippingQuery;
+    private final PreCheckoutQuery preCheckoutQuery;
     private final InlineQuery inlineQuery;
     private final ChosenInlineResult chosenInlineResult;
     private final TelegramApiClient telegramApiClient;
@@ -69,48 +75,80 @@ public final class UpdateContext {
             this.updateType = UpdateType.MESSAGE;
             this.message = update.message();
             this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.editedMessage() != null) {
             this.updateType = UpdateType.EDITED_MESSAGE;
             this.message = update.editedMessage();
             this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.channelPost() != null) {
             this.updateType = UpdateType.CHANNEL_POST;
             this.message = update.channelPost();
             this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.editedChannelPost() != null) {
             this.updateType = UpdateType.EDITED_CHANNEL_POST;
             this.message = update.editedChannelPost();
             this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.callbackQuery() != null) {
             this.updateType = UpdateType.CALLBACK_QUERY;
             this.message = null;
             this.callbackQuery = update.callbackQuery();
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
+            this.inlineQuery = null;
+            this.chosenInlineResult = null;
+        } else if (update.shippingQuery() != null) {
+            this.updateType = UpdateType.SHIPPING_QUERY;
+            this.message = null;
+            this.callbackQuery = null;
+            this.shippingQuery = update.shippingQuery();
+            this.preCheckoutQuery = null;
+            this.inlineQuery = null;
+            this.chosenInlineResult = null;
+        } else if (update.preCheckoutQuery() != null) {
+            this.updateType = UpdateType.PRE_CHECKOUT_QUERY;
+            this.message = null;
+            this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = update.preCheckoutQuery();
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         } else if (update.inlineQuery() != null) {
             this.updateType = UpdateType.INLINE_QUERY;
             this.message = null;
             this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
             this.inlineQuery = update.inlineQuery();
             this.chosenInlineResult = null;
         } else if (update.chosenInlineResult() != null) {
             this.updateType = UpdateType.CHOSEN_INLINE_RESULT;
             this.message = null;
             this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
             this.inlineQuery = null;
             this.chosenInlineResult = update.chosenInlineResult();
         } else {
             this.updateType = UpdateType.UNSUPPORTED;
             this.message = null;
             this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
         }
@@ -130,6 +168,14 @@ public final class UpdateContext {
 
     public CallbackQuery getCallbackQuery() {
         return callbackQuery;
+    }
+
+    public ShippingQuery getShippingQuery() {
+        return shippingQuery;
+    }
+
+    public PreCheckoutQuery getPreCheckoutQuery() {
+        return preCheckoutQuery;
     }
 
     public InlineQuery getInlineQuery() {
