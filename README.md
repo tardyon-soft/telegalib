@@ -1,225 +1,235 @@
-# Telegram Bot Framework (Stage 6)
+# telegram-bot-framework
 
-Multi-module Gradle project for Telegram bot runtime/library with Stage 6 scope.
+Java Telegram Bot framework (multi-module, Java 21, Gradle).
 
-## Modules Overview
+- `groupId`: `ru.tardyon.botframework`
+- base package: `ru.tardyon.botframework.telegram`
+
+## Модули
 
 - `telegram-bot-framework-core`
-  - Vanilla Java runtime/library (no Spring dependencies).
-  - Telegram Bot API client, DTO/model layer, polling/webhook runtimes, dispatcher/router/filters, middleware, FSM/state, inline mode, keyboards, commands, files/media, payments/webapp/business, and Stage 5 monetization/business operations.
+  - основной runtime (vanilla Java, без Spring)
 - `telegram-bot-framework-spring-boot-starter`
-  - Thin Spring Boot adapter over `core`.
-  - Auto-configuration, properties binding, polling/webhook lifecycle, webhook endpoint integration, middleware collection, annotation-driven handler registration, and Stage 5 helper bean wiring.
+  - thin Spring Boot adapter над core
 - `telegram-bot-framework-demo`
-  - Spring Boot sample app using starter.
-  - Demonstrates Stage 5 scenarios (paid media, stars, gifts, subscriptions, business story/checklist/gifts).
+  - пример приложения
 - `telegram-bot-framework-botapi-generator`
-  - Stage 6 tooling module for Bot API code generation pipeline.
-  - Not a production runtime dependency for application modules.
+  - tooling-only генератор DTO/method scaffolding
 - `telegram-bot-framework-testkit`
-  - Stage 6 testing/support module for fake Bot API server, fixtures, assertions, and update simulation.
-  - Not a production runtime dependency for application modules.
+  - testing-only fake Bot API server/simulators/assertions
 
-## Supported In Stage 6
+## Что ставить в проект
 
-- Core Bot API methods from Stage 1-4 plus Stage 5 monetization/business operations:
-  - monetization: `sendPaidMedia`, `getMyStarBalance`, `getStarTransactions`, `refundStarPayment`, `editUserStarSubscription`
-  - gifts/subscriptions: `getAvailableGifts`, `sendGift`, `giftPremiumSubscription`, `getUserGifts`, `getChatGifts`, `createChatSubscriptionInviteLink`, `editChatSubscriptionInviteLink`
-  - business advanced: `postStory`, `editStory`, `deleteStory`, `repostStory`, `sendChecklist`, `editMessageChecklist`, `setBusinessAccountGiftSettings`, `getBusinessAccountStarBalance`, `transferBusinessAccountStars`, `getBusinessAccountGifts`, `convertGiftToStars`, `upgradeGift`, `transferGift`
-- DTO/model coverage for Stage 5 objects in current scope:
-  - paid media hierarchy, stars transactions, gifts/owned gifts, story/input story content, checklist/input checklist, accepted gift types
-- Starter:
-  - annotation filters for Stage 5 service-message fields (`paid_media`, `gift`, `unique_gift`, `refunded_payment`, etc.)
-  - argument resolution for Stage 5 DTOs
-  - thin helper beans: `TelegramMonetizationOperations`, `TelegramBusinessOperations`
-  - manual `Router` wiring still supported
-- Demo:
-  - Stage 5 command scenarios and service-message handlers
-- Stage 6 platform/tooling maturity:
-  - core transport profiles (`CLOUD`/`LOCAL`) and base URL override
-  - core diagnostics hooks (`BotApiRequestListener`, `BotApiResponseListener`, `UpdateProcessingListener`, `ErrorListener`)
-  - core capability/version model (`BotApiVersion`, `BotApiCapability`, resolver)
-  - starter transport/diagnostics integration and capability bean exposure
-  - generator MVP pipeline with deterministic generated subset output
-  - testkit fake Bot API server + polling/webhook simulators + request assertions + fixtures
-  - demo profiles for `cloud` / `local` / `fake` modes
+Vanilla Java:
 
-## Not Supported Yet
+```kotlin
+repositories {
+    mavenCentral()
+}
 
-- MTProto-only features and non-Bot-API surfaces.
-- Production billing/reconciliation engines and payout/accounting systems.
-- Full gifts/treasury/backoffice suite beyond current Stage 5 methods.
-- Full WebApp frontend SDK wrapper stack.
-- Distributed storage or infra-heavy operational components as mandatory part of library.
-- Full protocol-accurate Telegram emulator in testkit.
-- Generator auto-rewrite of handwritten runtime layers (dispatcher/FSM/starter) without manual review.
+dependencies {
+    implementation("ru.tardyon.botframework:telegram-bot-framework-core:<version>")
+}
+```
 
-## Design Constraints
+Spring Boot:
 
-- Source of truth for Telegram semantics:
-  - https://core.telegram.org/bots/api
-  - https://core.telegram.org/bots/inline
-  - https://core.telegram.org/bots/webapps
-  - https://core.telegram.org/bots/payments
-  - https://core.telegram.org/bots/payments-stars
-  - https://core.telegram.org/bots/api-changelog
-- Project coordinates and package baseline:
-  - groupId: `ru.tardyon.botframework`
-  - base package: `ru.tardyon.botframework.telegram`
-- `core` must remain Spring-free and usable standalone.
-- `starter` must remain a thin integration layer and must not duplicate core runtime/business logic.
-- `demo` is usage sample only and must not become runtime implementation.
-- Scope is stage-bounded; avoid speculative abstractions and out-of-stage features.
+```kotlin
+repositories {
+    mavenCentral()
+}
 
-## Maven Central Publishing (core + starter)
+dependencies {
+    implementation("ru.tardyon.botframework:telegram-bot-framework-spring-boot-starter:<version>")
+}
+```
 
-The project is configured to publish only:
-- `telegram-bot-framework-core`
-- `telegram-bot-framework-spring-boot-starter`
+`starter` подтягивает `core` транзитивно.
 
-Required environment variables:
-- `RELEASE_VERSION` (example: `0.2.0` or `0.2.1-SNAPSHOT`)
-- `OSSRH_USERNAME`
-- `OSSRH_PASSWORD`
-- `SIGNING_KEY` (ASCII-armored private PGP key)
-- `SIGNING_PASSWORD`
+## Быстрый старт (vanilla Java)
 
-Publish commands:
+```java
+import ru.tardyon.botframework.telegram.api.DefaultTelegramApiClient;
+import ru.tardyon.botframework.telegram.api.TelegramApiClient;
+import ru.tardyon.botframework.telegram.bot.DefaultTelegramBot;
+import ru.tardyon.botframework.telegram.bot.TelegramBot;
+import ru.tardyon.botframework.telegram.dispatcher.DefaultDispatcher;
+import ru.tardyon.botframework.telegram.dispatcher.Router;
+import ru.tardyon.botframework.telegram.dispatcher.filter.Filters;
+import ru.tardyon.botframework.telegram.polling.LongPollingOptions;
+import ru.tardyon.botframework.telegram.polling.LongPollingRunner;
+
+public class VanillaBotMain {
+    public static void main(String[] args) {
+        TelegramApiClient client = new DefaultTelegramApiClient(System.getenv("BOT_TOKEN"));
+
+        Router router = new Router();
+        router.message(Filters.command("start"), (ctx, msg) -> ctx.telegramMessage().reply("Привет"));
+        router.message(Filters.textEquals("ping"), (ctx, msg) -> ctx.telegramMessage().reply("pong"));
+        router.callbackQuery(Filters.callbackDataStartsWith("menu:"), (ctx, cbq) -> ctx.telegramCallbackQuery().answer("OK"));
+
+        LongPollingRunner pollingRunner = new LongPollingRunner(client, LongPollingOptions.defaults());
+        TelegramBot bot = new DefaultTelegramBot(pollingRunner, new DefaultDispatcher(router));
+
+        bot.startPolling();
+    }
+}
+```
+
+## Spring Boot usage
+
+### application.yml (polling + cloud)
+
+```yaml
+telegram:
+  bot:
+    token: ${BOT_TOKEN}
+    mode: polling
+    transport:
+      mode: cloud
+      base-url: https://api.telegram.org
+    polling:
+      enabled: true
+      timeout: 30
+      limit: 100
+```
+
+### application.yml (polling + local Bot API)
+
+```yaml
+telegram:
+  bot:
+    token: ${BOT_TOKEN}
+    mode: polling
+    transport:
+      mode: local
+      base-url: http://127.0.0.1:8081
+      local-file-uri-upload-enabled: true
+    polling:
+      enabled: true
+```
+
+### application.yml (webhook)
+
+```yaml
+telegram:
+  bot:
+    token: ${BOT_TOKEN}
+    mode: webhook
+    webhook:
+      enabled: true
+      path: /telegram/webhook
+      public-url: ${BOT_WEBHOOK_PUBLIC_URL}
+      secret-token: ${BOT_WEBHOOK_SECRET_TOKEN:}
+      drop-pending-updates: true
+```
+
+### Annotation controller пример
+
+```java
+import ru.tardyon.botframework.telegram.bot.TelegramMessage;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.BotController;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.OnCallbackQuery;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.OnMessage;
+
+@BotController
+public class MyBotController {
+
+    @OnMessage(command = "start")
+    public void onStart(TelegramMessage message) {
+        message.reply("Привет");
+    }
+
+    @OnMessage(textEquals = "ping")
+    public void onPing(TelegramMessage message) {
+        message.reply("pong");
+    }
+
+    @OnCallbackQuery(callbackPrefix = "menu:")
+    public void onMenu(ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery callback) {
+        callback.answer("OK");
+    }
+}
+```
+
+## Diagnostics hooks
+
+Если нужны diagnostics listeners в starter:
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import ru.tardyon.botframework.telegram.diagnostics.BotApiRequestListener;
+import ru.tardyon.botframework.telegram.diagnostics.BotApiResponseListener;
+
+@Configuration
+public class DiagnosticsConfig {
+    @Bean
+    BotApiRequestListener requestListener() {
+        return event -> System.out.println("API -> " + event.methodName());
+    }
+
+    @Bean
+    BotApiResponseListener responseListener() {
+        return event -> System.out.println("API <- " + event.methodName() + " success=" + event.success());
+    }
+}
+```
+
+И включение в config:
+
+```yaml
+telegram:
+  bot:
+    diagnostics:
+      enabled: true
+```
+
+## Demo
+
+`telegram-bot-framework-demo` содержит готовые профили:
+
+- `polling,cloud`
+- `polling,local`
+- `webhook,cloud`
+- `fake` (test/dev режим через testkit)
+
+Запуск:
 
 ```bash
-export RELEASE_VERSION=0.2.0
-export OSSRH_USERNAME=...
-export OSSRH_PASSWORD=...
-export SIGNING_KEY="$(cat ~/.gnupg/private.asc)"
-export SIGNING_PASSWORD=...
-
-./gradlew :telegram-bot-framework-core:publish
-./gradlew :telegram-bot-framework-spring-boot-starter:publish
+./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling,cloud'
+./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling,local'
+./gradlew :telegram-bot-framework-demo:test --tests '*DemoFakeModeIntegrationTest'
 ```
 
-Notes:
-- Snapshot versions (`*-SNAPSHOT`) go to Sonatype snapshots repository.
-- Release versions go to Sonatype staging repository.
+## Публикация в Maven Central (через GitLab CI + JReleaser)
 
-## Importing Library
+Публикуются только:
 
-Vanilla Java (core only):
+- `telegram-bot-framework-core`
+- `telegram-bot-framework-spring-boot-starter`
 
-```kotlin
-implementation("ru.tardyon.botframework:telegram-bot-framework-core:<version>")
+Нужные переменные окружения (как в `.gitlab-ci.yml`):
+
+- `RELEASE_VERSION`
+- `JRELEASER_MAVENCENTRAL_USERNAME`
+- `JRELEASER_MAVENCENTRAL_PASSWORD`
+- `JRELEASER_GPG_PUBLIC_KEY`
+- `JRELEASER_GPG_SECRET_KEY`
+- `JRELEASER_GPG_PASSPHRASE`
+
+Команда пайплайна:
+
+```bash
+./gradlew --no-daemon --stacktrace --no-configuration-cache clean publish jreleaserDeploy
 ```
 
-Spring Boot (starter, core comes transitively):
+`publish` складывает артефакты в `build/staging-deploy`, `jreleaserDeploy` отправляет staging в Maven Central Publisher API.
 
-```kotlin
-implementation("ru.tardyon.botframework:telegram-bot-framework-spring-boot-starter:<version>")
-```
+## Границы модулей
 
-## Capability Layer (Stage 6 Scaffold)
-
-Core contains a version/capability compatibility model in package
-`ru.tardyon.botframework.telegram.api.capability`.
-
-Example usage:
-
-```java
-import ru.tardyon.botframework.telegram.api.capability.BotApiCapabilities;
-import ru.tardyon.botframework.telegram.api.capability.BotApiCapabilitiesResolver;
-import ru.tardyon.botframework.telegram.api.capability.BotApiCapability;
-import ru.tardyon.botframework.telegram.api.capability.BotApiVersion;
-
-BotApiCapabilities caps = BotApiCapabilitiesResolver.forDeclaredVersion(BotApiVersion.of(9, 3));
-boolean paidMediaSupported = caps.supports(BotApiCapability.PAID_MEDIA);
-boolean privateTopicsSupported = caps.supports(BotApiCapability.PRIVATE_CHAT_TOPICS);
-```
-
-The layer is explicit and manual:
-- no network auto-detection
-- no runtime permission engine
-- only declared version or manually configured capability profile
-
-## Transport Profiles (Stage 6 Scaffold)
-
-Core transport profile types:
-- `ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode`
-  - `CLOUD`
-  - `LOCAL`
-- `ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile`
-
-Cloud mode example:
-
-```java
-var client = new DefaultTelegramApiClient(
-    System.getenv("BOT_TOKEN"),
-    BotApiTransportProfile.cloudDefault()
-);
-```
-
-Local Bot API mode example:
-
-```java
-var client = new DefaultTelegramApiClient(
-    System.getenv("BOT_TOKEN"),
-    BotApiTransportProfile.local("http://127.0.0.1:8081")
-);
-```
-
-Local mode path upload example (compatible with Bot API local server `file://` support):
-
-```java
-client.sendDocument(SendDocumentRequest.of(123L, InputFile.path(Path.of("/absolute/path/report.pdf"))));
-```
-
-Notes:
-- Default mode remains cloud (`https://api.telegram.org`).
-- Local mode is transport/profile support only; runtime API remains the same.
-- According to official Bot API local server notes, local mode can use:
-  - local file paths via `file://` URI semantics for uploads,
-  - webhook over HTTP,
-  - local IP addresses and arbitrary ports for webhook endpoint.
-
-## Diagnostics Hooks (Stage 6 Scaffold)
-
-Core diagnostics abstractions live in `ru.tardyon.botframework.telegram.diagnostics`:
-- `BotApiRequestListener`
-- `BotApiResponseListener`
-- `UpdateProcessingListener`
-- `ErrorListener`
-- `DiagnosticsHooks` (registry/composer)
-- `SensitiveDataRedactor` with default implementation `DefaultSensitiveDataRedactor`
-
-Attach diagnostics listeners:
-
-```java
-DiagnosticsHooks hooks = DiagnosticsHooks.builder()
-    .addRequestListener(event -> System.out.println("API request: " + event.methodName()))
-    .addResponseListener(event -> System.out.println("API response ms: " + event.durationMillis()))
-    .addErrorListener(event -> System.err.println("Error: " + event.component() + " " + event.operation()))
-    .build();
-
-DefaultTelegramApiClient client = new DefaultTelegramApiClient(
-    token,
-    BotApiTransportProfile.cloudDefault(),
-    HttpClient.newHttpClient(),
-    new ObjectMapper(),
-    hooks
-);
-```
-
-Log API timings:
-
-```java
-hooks = DiagnosticsHooks.builder()
-    .addResponseListener(event ->
-        System.out.println(event.methodName() + " took " + event.durationMillis() + "ms, success=" + event.success()))
-    .build();
-```
-
-Redact payment/provider fields:
-
-```java
-String redacted = DefaultSensitiveDataRedactor.INSTANCE.redact(
-    "{\"provider_token\":\"abc\",\"provider_data\":\"raw\",\"secret_token\":\"wh\"}"
-);
-// -> provider/token fields are replaced with <redacted>
-```
+- `core` — production runtime/library logic
+- `starter` — только wiring/autoconfiguration/lifecycle/annotation integration
+- `demo` — только example app
+- `generator` — tooling only
+- `testkit` — testing support only
