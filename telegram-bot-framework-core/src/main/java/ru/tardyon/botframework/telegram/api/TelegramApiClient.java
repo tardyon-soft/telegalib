@@ -18,7 +18,11 @@ import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
+import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
+import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
@@ -38,6 +42,8 @@ import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
+import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
+import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
 
 public interface TelegramApiClient {
 
@@ -63,12 +69,22 @@ public interface TelegramApiClient {
 
     Message sendInvoice(SendInvoiceRequest request);
 
+    Message sendPaidMedia(SendPaidMediaRequest request);
+
     boolean answerShippingQuery(AnswerShippingQueryRequest request);
 
     /**
      * The Telegram Bot API requires this method to be called within 10 seconds after receiving a pre_checkout_query update.
      */
     boolean answerPreCheckoutQuery(AnswerPreCheckoutQueryRequest request);
+
+    StarAmount getMyStarBalance();
+
+    StarTransactions getStarTransactions(GetStarTransactionsRequest request);
+
+    boolean refundStarPayment(RefundStarPaymentRequest request);
+
+    boolean editUserStarSubscription(EditUserStarSubscriptionRequest request);
 
     BusinessConnection getBusinessConnection(GetBusinessConnectionRequest request);
 

@@ -30,8 +30,12 @@ import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
+import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
+import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
+import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
@@ -48,6 +52,10 @@ import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButtons;
 import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
+import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaPhoto;
+import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaVideo;
+import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
+import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
@@ -268,6 +276,109 @@ class DefaultTelegramApiClientStage2MethodsTest {
         assertTrue(body.contains("\"title\":\"Pro plan\""));
         assertTrue(body.contains("\"currency\":\"USD\""));
         assertTrue(body.contains("\"prices\":["));
+    }
+
+    @Test
+    void sendPaidMediaSupportsPhotoAndVideo() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"message_id":102,"chat":{"id":123,"type":"private"},"date":1}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        client.sendPaidMedia(
+            new SendPaidMediaRequest(
+                null,
+                123L,
+                10,
+                List.of(
+                    InputPaidMediaPhoto.of(InputFile.fileId("photo-file-id")),
+                    InputPaidMediaVideo.of(InputFile.fileId("video-file-id"))
+                ),
+                "paid:payload:1",
+                "Paid media",
+                null,
+                null,
+                true,
+                true
+            )
+        );
+
+        assertEquals("/bottoken/sendPaidMedia", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":123"));
+        assertTrue(body.contains("\"star_count\":10"));
+        assertTrue(body.contains("\"media\":["));
+        assertTrue(body.contains("\"type\":\"photo\""));
+        assertTrue(body.contains("\"type\":\"video\""));
+    }
+
+    @Test
+    void getMyStarBalanceUsesExpectedMethodAndParsesResponse() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"amount":1000,"nanostar_amount":15}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        StarAmount result = client.getMyStarBalance();
+
+        assertEquals("/bottoken/getMyStarBalance", httpClient.lastRequest().uri().getPath());
+        assertEquals(1000, result.amount());
+        assertEquals(15, result.nanostarAmount());
+    }
+
+    @Test
+    void getStarTransactionsUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"transactions":[{"id":"tx-1","amount":{"amount":25},"date":1710011111,"source":{"type":"other"},"receiver":{"type":"telegram_ads"}}],"next_offset":"off-2"}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        StarTransactions result = client.getStarTransactions(new GetStarTransactionsRequest("off-1", 50));
+
+        assertEquals("/bottoken/getStarTransactions", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"offset\":\"off-1\""));
+        assertTrue(body.contains("\"limit\":50"));
+        assertEquals(1, result.transactions().size());
+        assertEquals("tx-1", result.transactions().getFirst().id());
+        assertEquals("off-2", result.nextOffset());
+    }
+
+    @Test
+    void refundStarPaymentUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        boolean result = client.refundStarPayment(new RefundStarPaymentRequest(777L, "tg-charge-1"));
+
+        assertTrue(result);
+        assertEquals("/bottoken/refundStarPayment", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"user_id\":777"));
+        assertTrue(body.contains("\"telegram_payment_charge_id\":\"tg-charge-1\""));
+    }
+
+    @Test
+    void editUserStarSubscriptionUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        boolean result = client.editUserStarSubscription(
+            new EditUserStarSubscriptionRequest(777L, "tg-charge-sub-1", true)
+        );
+
+        assertTrue(result);
+        assertEquals("/bottoken/editUserStarSubscription", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"user_id\":777"));
+        assertTrue(body.contains("\"telegram_payment_charge_id\":\"tg-charge-sub-1\""));
+        assertTrue(body.contains("\"is_canceled\":true"));
     }
 
     @Test

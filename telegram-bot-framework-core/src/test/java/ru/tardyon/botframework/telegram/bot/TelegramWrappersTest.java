@@ -218,12 +218,39 @@ class TelegramWrappersTest {
         }
 
         @Override
+        public Message sendPaidMedia(ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public boolean answerShippingQuery(ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest request) {
             throw new UnsupportedOperationException();
         }
 
         @Override
         public boolean answerPreCheckoutQuery(ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.payment.StarAmount getMyStarBalance() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.payment.StarTransactions getStarTransactions(
+            ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean refundStarPayment(ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean editUserStarSubscription(ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest request) {
             throw new UnsupportedOperationException();
         }
 

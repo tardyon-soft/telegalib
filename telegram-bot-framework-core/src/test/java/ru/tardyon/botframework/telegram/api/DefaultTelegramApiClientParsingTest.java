@@ -361,6 +361,62 @@ class DefaultTelegramApiClientParsingTest {
     }
 
     @Test
+    void parseMessageWithPaidMediaAndRefundedPayment() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 1009,
+                  "message": {
+                    "message_id": 44,
+                    "date": 1710000002,
+                    "chat": { "id": 123456789, "type": "private" },
+                    "paid_media": {
+                      "star_count": 15,
+                      "paid_media": [
+                        { "type": "preview", "width": 640, "height": 360 },
+                        {
+                          "type": "photo",
+                          "photo": [
+                            {
+                              "file_id": "ph1",
+                              "file_unique_id": "uph1",
+                              "width": 320,
+                              "height": 240
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    "refunded_payment": {
+                      "currency": "XTR",
+                      "total_amount": 15,
+                      "invoice_payload": "paid:payload:1",
+                      "telegram_payment_charge_id": "tg-charge-1"
+                    }
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response =
+            DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        Update update = response.result().getFirst();
+        assertNotNull(update.message());
+        assertNotNull(update.message().paidMedia());
+        assertEquals(15, update.message().paidMedia().starCount());
+        assertEquals(2, update.message().paidMedia().paidMedia().size());
+        assertNotNull(update.message().refundedPayment());
+        assertEquals("XTR", update.message().refundedPayment().currency());
+        assertEquals(15, update.message().refundedPayment().totalAmount());
+    }
+
+    @Test
     void parseGetUpdatesResponseWithBusinessConnectionAndMessages() {
         String raw = """
             {

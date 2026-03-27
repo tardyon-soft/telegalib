@@ -34,8 +34,12 @@ import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
+import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
+import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
@@ -61,6 +65,9 @@ import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.media.InputMedia;
+import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMedia;
+import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
+import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
 import ru.tardyon.botframework.telegram.api.transport.MultipartFormData;
@@ -161,6 +168,32 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     @Override
+    public Message sendPaidMedia(SendPaidMediaRequest request) {
+        SendPaidMediaRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
+        boolean hasUpload = actualRequest.media().stream().map(InputPaidMedia::media).anyMatch(InputFile::isUpload);
+
+        if (!hasUpload) {
+            SendPaidMediaJsonPayload payload = new SendPaidMediaJsonPayload(
+                actualRequest.businessConnectionId(),
+                actualRequest.chatId(),
+                actualRequest.starCount(),
+                actualRequest.media().stream()
+                    .map(this::toPaidMediaPayloadWithReference)
+                    .toList(),
+                actualRequest.payload(),
+                actualRequest.caption(),
+                actualRequest.parseMode(),
+                actualRequest.captionEntities(),
+                actualRequest.showCaptionAboveMedia(),
+                actualRequest.disableNotification()
+            );
+            return invoke("sendPaidMedia", payload, objectMapper.getTypeFactory().constructType(Message.class));
+        }
+
+        return sendPaidMediaMultipart(actualRequest);
+    }
+
+    @Override
     public boolean answerShippingQuery(AnswerShippingQueryRequest request) {
         Boolean result = invoke("answerShippingQuery", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
@@ -169,6 +202,29 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     @Override
     public boolean answerPreCheckoutQuery(AnswerPreCheckoutQueryRequest request) {
         Boolean result = invoke("answerPreCheckoutQuery", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public StarAmount getMyStarBalance() {
+        return invoke("getMyStarBalance", null, objectMapper.getTypeFactory().constructType(StarAmount.class));
+    }
+
+    @Override
+    public StarTransactions getStarTransactions(GetStarTransactionsRequest request) {
+        GetStarTransactionsRequest actualRequest = request == null ? new GetStarTransactionsRequest(null, null) : request;
+        return invoke("getStarTransactions", actualRequest, objectMapper.getTypeFactory().constructType(StarTransactions.class));
+    }
+
+    @Override
+    public boolean refundStarPayment(RefundStarPaymentRequest request) {
+        Boolean result = invoke("refundStarPayment", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean editUserStarSubscription(EditUserStarSubscriptionRequest request) {
+        Boolean result = invoke("editUserStarSubscription", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
     }
 
@@ -388,6 +444,46 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         }
     }
 
+    private Message sendPaidMediaMultipart(SendPaidMediaRequest request) {
+        try {
+            MultipartFormData multipart = new MultipartFormData()
+                .addField("chat_id", String.valueOf(request.chatId()))
+                .addField("star_count", String.valueOf(request.starCount()));
+            if (request.businessConnectionId() != null) {
+                multipart.addField("business_connection_id", request.businessConnectionId());
+            }
+            if (request.payload() != null) {
+                multipart.addField("payload", request.payload());
+            }
+            if (request.caption() != null) {
+                multipart.addField("caption", request.caption());
+            }
+            if (request.parseMode() != null) {
+                multipart.addField("parse_mode", request.parseMode());
+            }
+            if (request.captionEntities() != null) {
+                multipart.addField("caption_entities", objectMapper.writeValueAsString(request.captionEntities()));
+            }
+            if (request.showCaptionAboveMedia() != null) {
+                multipart.addField("show_caption_above_media", String.valueOf(request.showCaptionAboveMedia()));
+            }
+            if (request.disableNotification() != null) {
+                multipart.addField("disable_notification", String.valueOf(request.disableNotification()));
+            }
+
+            AtomicInteger counter = new AtomicInteger(0);
+            List<SendPaidMediaItemPayload> payloadItems = request.media().stream()
+                .map(item -> toPaidMediaPayload(item, multipart, counter))
+                .toList();
+
+            multipart.addField("media", objectMapper.writeValueAsString(payloadItems));
+            MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
+            return invokeMultipart("sendPaidMedia", builtMultipart, objectMapper.getTypeFactory().constructType(Message.class));
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while preparing multipart sendPaidMedia request", null, e);
+        }
+    }
+
     private SendMediaGroupItemPayload toMediaPayloadWithReference(InputMedia inputMedia) {
         return new SendMediaGroupItemPayload(
             inputMedia.type(),
@@ -428,6 +524,31 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             inputMedia.parseMode(),
             inputMedia.captionEntities()
         );
+    }
+
+    private SendPaidMediaItemPayload toPaidMediaPayloadWithReference(InputPaidMedia inputPaidMedia) {
+        return new SendPaidMediaItemPayload(
+            inputPaidMedia.type(),
+            inputPaidMedia.media().asReference()
+        );
+    }
+
+    private SendPaidMediaItemPayload toPaidMediaPayload(
+        InputPaidMedia inputPaidMedia,
+        MultipartFormData multipart,
+        AtomicInteger counter
+    ) {
+        InputFile mediaFile = inputPaidMedia.media();
+        if (mediaFile instanceof InputFileReference reference) {
+            return new SendPaidMediaItemPayload(inputPaidMedia.type(), reference.value());
+        }
+        String attachName = "paidmedia" + counter.incrementAndGet();
+        try {
+            addInputFilePart(multipart, attachName, mediaFile, attachName);
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while preparing multipart paid media part", null, e);
+        }
+        return new SendPaidMediaItemPayload(inputPaidMedia.type(), "attach://" + attachName);
     }
 
     private void addInputFilePart(MultipartFormData multipart, String partName, InputFile inputFile, String defaultFilename) throws IOException {
@@ -541,6 +662,26 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         String caption,
         @JsonProperty("parse_mode") String parseMode,
         @JsonProperty("caption_entities") List<MessageEntity> captionEntities
+    ) {
+    }
+
+    private record SendPaidMediaJsonPayload(
+        @JsonProperty("business_connection_id") String businessConnectionId,
+        @JsonProperty("chat_id") Object chatId,
+        @JsonProperty("star_count") Integer starCount,
+        List<SendPaidMediaItemPayload> media,
+        String payload,
+        String caption,
+        @JsonProperty("parse_mode") String parseMode,
+        @JsonProperty("caption_entities") List<MessageEntity> captionEntities,
+        @JsonProperty("show_caption_above_media") Boolean showCaptionAboveMedia,
+        @JsonProperty("disable_notification") Boolean disableNotification
+    ) {
+    }
+
+    private record SendPaidMediaItemPayload(
+        String type,
+        String media
     ) {
     }
 
