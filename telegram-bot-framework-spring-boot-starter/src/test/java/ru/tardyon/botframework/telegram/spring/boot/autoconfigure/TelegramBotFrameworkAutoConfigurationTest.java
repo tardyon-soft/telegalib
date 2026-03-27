@@ -17,6 +17,7 @@ import ru.tardyon.botframework.telegram.dispatcher.middleware.UpdateMiddleware;
 import ru.tardyon.botframework.telegram.polling.LongPollingOptions;
 import ru.tardyon.botframework.telegram.polling.LongPollingRunner;
 import ru.tardyon.botframework.telegram.spring.boot.lifecycle.TelegramBotLifecycle;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
 import ru.tardyon.botframework.telegram.webhook.WebhookUpdateProcessor;
 
@@ -42,6 +43,7 @@ class TelegramBotFrameworkAutoConfigurationTest {
                 assertThat(context).hasSingleBean(LongPollingRunner.class);
                 assertThat(context).hasSingleBean(Router.class);
                 assertThat(context).hasSingleBean(Dispatcher.class);
+                assertThat(context).hasSingleBean(TelegramAnnotationHandlerRegistrar.class);
                 assertThat(context).hasSingleBean(TelegramBot.class);
                 assertThat(context).hasSingleBean(TelegramBotLifecycle.class);
                 assertThat(context).hasSingleBean(WebhookUpdateProcessor.class);

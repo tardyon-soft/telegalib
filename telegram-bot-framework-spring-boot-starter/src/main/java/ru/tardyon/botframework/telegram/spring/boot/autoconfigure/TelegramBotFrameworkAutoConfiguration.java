@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 import ru.tardyon.botframework.telegram.api.DefaultTelegramApiClient;
@@ -25,6 +26,7 @@ import ru.tardyon.botframework.telegram.polling.LongPollingRunner;
 import ru.tardyon.botframework.telegram.spring.boot.lifecycle.TelegramBotLifecycle;
 import ru.tardyon.botframework.telegram.spring.boot.properties.TelegramBotFrameworkProperties;
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
 import ru.tardyon.botframework.telegram.webhook.DefaultWebhookUpdateProcessor;
 import ru.tardyon.botframework.telegram.webhook.WebhookUpdateProcessor;
 
@@ -87,6 +89,15 @@ public class TelegramBotFrameworkAutoConfiguration {
             return new DefaultDispatcher(telegramRouter);
         }
         return new DefaultDispatcher(telegramRouter, middlewares);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TelegramAnnotationHandlerRegistrar telegramAnnotationHandlerRegistrar(
+        Router telegramRouter,
+        ListableBeanFactory beanFactory
+    ) {
+        return new TelegramAnnotationHandlerRegistrar(telegramRouter, beanFactory);
     }
 
     @Bean
