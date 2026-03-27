@@ -9,6 +9,8 @@ telegram:
       allowed-updates:
         - message
         - callback_query
+        - inline_query
+        - chosen_inline_result
     webhook:
       enabled: false
       path: /telegram/webhook
@@ -24,6 +26,11 @@ telegram:
     mode: polling
     polling:
       enabled: true
+      allowed-updates:
+        - message
+        - callback_query
+        - inline_query
+        - chosen_inline_result
     webhook:
       enabled: false
 
@@ -38,6 +45,11 @@ telegram:
     mode: webhook
     polling:
       enabled: false
+      allowed-updates:
+        - message
+        - callback_query
+        - inline_query
+        - chosen_inline_result
     webhook:
       enabled: true
       path: /telegram/webhook

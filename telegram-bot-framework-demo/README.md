@@ -1,40 +1,70 @@
 # telegram-bot-framework-demo
 
-Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 2 examples.
+Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 3 scenarios, using annotation-driven API.
 
 ## What demo shows
 
-- `/start` -> reply with:
-  - inline keyboard (`menu:one`, `menu:two`)
-  - reply keyboard (`ping`, `/commands-init`, `/file-test`)
-- `ping` -> reply `pong`
-- callback data `menu:*` -> `answer("OK")` + `editReplyMarkup(...)`
-- `/commands-init` -> `setMyCommands(...)`
-- `/file-test <file_id>` -> `getFile` + `downloadFile` + `downloadFile(..., target)`
-- `/file-test send` -> `sendDocument` from local file (`DEMO_UPLOAD_FILE`)
-- middleware example:
-  - `UpdateMiddleware` logs update type and elapsed time to stdout
+- Annotation-driven handlers:
+  - `@BotController`
+  - `@OnMessage`
+  - `@OnCallbackQuery`
+  - `@OnInlineQuery`
+  - `@OnChosenInlineResult`
+- FSM conversation:
+  - `/startform` -> asks name -> asks language -> completes and clears state
+- Advanced inline keyboard:
+  - callback button `menu:*`
+  - `switch_inline_query_current_chat`
+  - `switch_inline_query_chosen_chat`
+  - `copy_text`
+- Callback handling:
+  - `menu:*` -> `answer("OK")` + `editText(...)`
+- Inline mode:
+  - inline query answers with `InlineQueryResultArticle` + `InlineQueryResultPhoto`
+  - chosen inline result logging example
+- Media group:
+  - `/albumtest` with local uploads or `file_id` sources
+- Menu button:
+  - `/menubutton-init` -> `setChatMenuButton` + `getChatMenuButton`
+- Middleware:
+  - `UpdateMiddleware` logs update type and latency
 
-## Requirements
+## Inline mode prerequisites
 
-- Java 21
-- `BOT_TOKEN` environment variable
+Before testing inline queries:
 
-Optional (webhook mode):
+1. Enable inline mode for your bot in BotFather (`/setinline`).
+2. Optionally enable inline feedback if you want richer chosen-result analytics in BotFather.
+3. In Telegram chat, type `@your_bot_username <query>` to trigger inline query flow.
+
+## Environment variables
+
+Required:
+
+- `BOT_TOKEN`
+
+Optional for webhook mode:
+
 - `BOT_WEBHOOK_PUBLIC_URL`
 - `BOT_WEBHOOK_SECRET_TOKEN`
 
-Optional (file upload demo):
-- `DEMO_UPLOAD_FILE` (absolute path to local file)
+Optional for `/albumtest`:
 
-## Run in Polling mode
+- local files:
+  - `DEMO_ALBUM_FILE1`
+  - `DEMO_ALBUM_FILE2`
+- or Telegram file ids:
+  - `DEMO_ALBUM_FILE_ID1`
+  - `DEMO_ALBUM_FILE_ID2`
+
+## Run demo (polling)
 
 ```bash
 export BOT_TOKEN=123456:ABCDEF
 ./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling'
 ```
 
-## Run in Webhook mode
+## Run demo (webhook)
 
 ```bash
 export BOT_TOKEN=123456:ABCDEF
@@ -47,5 +77,5 @@ Webhook endpoint path by default: `/telegram/webhook`.
 
 ## Notes
 
-- Demo keeps all runtime logic in core/starter and only wires usage examples.
-- This module is not production deployment guidance.
+- Demo is only usage example; library runtime remains in `core`/`starter`.
+- No production deployment hardening is included.
