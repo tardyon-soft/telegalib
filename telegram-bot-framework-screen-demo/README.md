@@ -1,6 +1,6 @@
 # telegram-bot-framework-screen-demo
 
-Отдельный demo-модуль для экранного API (`screen layer`) поверх `telegram-bot-framework-core`.
+Отдельный demo-модуль для экранного API (`screen layer`) поверх `telegram-bot-framework-core` и `spring-boot-starter`.
 
 ## Что показывает demo
 
@@ -8,6 +8,7 @@
 - стек экранов (`push/back`);
 - композицию экрана из виджетов;
 - разделение `user state` и `screen state`.
+- annotation-driven screen API (`@ScreenController`, `@Screen`, `@OnScreenMessage`, `@OnScreenCallback`).
 
 ## Команды
 
@@ -26,3 +27,7 @@ BOT_TOKEN=<your_token> ./gradlew :telegram-bot-framework-screen-demo:bootRun
 `screen state` хранится отдельно от FSM user state:
 - user state: `UpdateContext.state()`
 - screen state: `ScreenStateStorage`
+
+Экраны и переходы описаны в:
+- `ScreenDemoScreensController` (аннотации screen API)
+- `ScreenDemoRoutesController` (обычные команды для user state)
