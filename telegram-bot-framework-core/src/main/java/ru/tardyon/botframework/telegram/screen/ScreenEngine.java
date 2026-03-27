@@ -99,10 +99,16 @@ public final class ScreenEngine {
             case RENDER -> renderCurrent(updateContext, key, chatId);
             case PUSH -> {
                 stack.push(requireScreenId(action.targetScreenId()));
+                if (action.targetData() != null) {
+                    stack.current().ifPresent(frame -> frame.putData(ScreenAction.TARGET_DATA_KEY, action.targetData()));
+                }
                 renderCurrent(updateContext, key, chatId);
             }
             case REPLACE -> {
                 stack.replace(requireScreenId(action.targetScreenId()));
+                if (action.targetData() != null) {
+                    stack.current().ifPresent(frame -> frame.putData(ScreenAction.TARGET_DATA_KEY, action.targetData()));
+                }
                 renderCurrent(updateContext, key, chatId);
             }
             case BACK -> {

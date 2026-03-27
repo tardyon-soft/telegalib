@@ -92,6 +92,59 @@ class ScreenEngineTest {
     }
 
     @Test
+    void pushActionCarriesTargetDataToNextScreenFrame() {
+        InMemoryScreenStateStorage screenStorage = new InMemoryScreenStateStorage();
+        ScreenRegistry registry = new ScreenRegistry();
+        ScreenViewRenderer renderer = (ctx, screenState, chatId, view) -> {
+        };
+
+        registry.register(new Screen() {
+            @Override
+            public String id() {
+                return "home";
+            }
+
+            @Override
+            public ScreenView render(ScreenContext context) {
+                return ScreenView.builder().text("Home").build();
+            }
+
+            @Override
+            public ScreenAction onCallbackQuery(ScreenContext context, CallbackQuery callbackQuery) {
+                if ("open_settings".equals(callbackQuery.data())) {
+                    return ScreenAction.push("settings", "ch_1");
+                }
+                return ScreenAction.unhandled();
+            }
+        });
+
+        registry.register(new Screen() {
+            @Override
+            public String id() {
+                return "settings";
+            }
+
+            @Override
+            public ScreenView render(ScreenContext context) {
+                return ScreenView.builder().text("Settings").build();
+            }
+        });
+
+        ScreenEngine engine = new ScreenEngine(registry, screenStorage, renderer);
+        StateStorage userStateStorage = new InMemoryStateStorage();
+        UpdateContext startContext = new UpdateContext(messageUpdate(30L, "start"), null, userStateStorage, "bot-test");
+        engine.start(startContext, "home");
+
+        UpdateContext pushContext = new UpdateContext(callbackUpdate(31L, "open_settings"), null, userStateStorage, "bot-test");
+        assertTrue(engine.handle(pushContext));
+
+        ScreenStack stack = screenStorage.find(new ScreenKey("bot-test", 1001L)).orElseThrow();
+        ScreenFrame current = stack.current().orElseThrow();
+        assertEquals("settings", current.screenId());
+        assertEquals("ch_1", current.getData(ScreenAction.TARGET_DATA_KEY).orElse(null));
+    }
+
+    @Test
     void screenStateIsSeparatedFromUserState() {
         InMemoryScreenStateStorage screenStorage = new InMemoryScreenStateStorage();
         ScreenRegistry registry = new ScreenRegistry();

@@ -40,8 +40,7 @@ public class ScreenDemoWidgetsController {
 
     @OnWidgetAction(widget = "channels_list", action = "open")
     public ScreenAction openChannel(ScreenContext context, String payload) {
-        context.screenState().putData("selected_channel_id", payload);
-        return ScreenAction.push("catalog_details");
+        return ScreenAction.push("catalog_details", payload);
     }
 
     private WidgetEffect mediaHintEffect() {

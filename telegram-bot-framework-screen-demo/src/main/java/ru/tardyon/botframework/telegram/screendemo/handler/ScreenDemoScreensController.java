@@ -173,7 +173,7 @@ public class ScreenDemoScreensController {
 
     @Screen(id = CATALOG_DETAILS_SCREEN)
     public ScreenView catalogDetails(ScreenContext context) {
-        String selectedId = (String) context.screenState().getData("selected_channel_id").orElse(null);
+        String selectedId = (String) context.screenState().getData(ScreenAction.TARGET_DATA_KEY).orElse(null);
         ChannelItem selected = CHANNELS.stream().filter(item -> item.id().equals(selectedId)).findFirst().orElse(null);
         InlineKeyboardMarkup keyboard = Keyboards.inlineKeyboard()
             .row(Keyboards.callbackButton("Назад", ScreenCallbackData.back()))

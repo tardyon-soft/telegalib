@@ -4,8 +4,11 @@ import java.util.Objects;
 
 public record ScreenAction(
     Kind kind,
-    String targetScreenId
+    String targetScreenId,
+    String targetData
 ) {
+    public static final String TARGET_DATA_KEY = "_screen_target_data";
+
     public enum Kind {
         UNHANDLED,
         HANDLED,
@@ -21,31 +24,39 @@ public record ScreenAction(
     }
 
     public static ScreenAction unhandled() {
-        return new ScreenAction(Kind.UNHANDLED, null);
+        return new ScreenAction(Kind.UNHANDLED, null, null);
     }
 
     public static ScreenAction handled() {
-        return new ScreenAction(Kind.HANDLED, null);
+        return new ScreenAction(Kind.HANDLED, null, null);
     }
 
     public static ScreenAction render() {
-        return new ScreenAction(Kind.RENDER, null);
+        return new ScreenAction(Kind.RENDER, null, null);
     }
 
     public static ScreenAction push(String screenId) {
-        return new ScreenAction(Kind.PUSH, requireTarget(screenId));
+        return new ScreenAction(Kind.PUSH, requireTarget(screenId), null);
+    }
+
+    public static ScreenAction push(String screenId, String targetData) {
+        return new ScreenAction(Kind.PUSH, requireTarget(screenId), targetData);
     }
 
     public static ScreenAction replace(String screenId) {
-        return new ScreenAction(Kind.REPLACE, requireTarget(screenId));
+        return new ScreenAction(Kind.REPLACE, requireTarget(screenId), null);
+    }
+
+    public static ScreenAction replace(String screenId, String targetData) {
+        return new ScreenAction(Kind.REPLACE, requireTarget(screenId), targetData);
     }
 
     public static ScreenAction back() {
-        return new ScreenAction(Kind.BACK, null);
+        return new ScreenAction(Kind.BACK, null, null);
     }
 
     public static ScreenAction clear() {
-        return new ScreenAction(Kind.CLEAR, null);
+        return new ScreenAction(Kind.CLEAR, null, null);
     }
 
     private static String requireTarget(String screenId) {
