@@ -2,12 +2,14 @@ package ru.tardyon.botframework.telegram.screen;
 
 import java.util.Collection;
 import java.util.Objects;
+import ru.tardyon.botframework.telegram.api.file.InputFile;
 import ru.tardyon.botframework.telegram.api.model.markup.ReplyMarkup;
 
 public record ScreenView(
     String text,
     ReplyMarkup replyMarkup,
-    ScreenRenderMode renderMode
+    ScreenRenderMode renderMode,
+    InputFile photo
 ) {
     public ScreenView {
         Objects.requireNonNull(text, "text must not be null");
@@ -22,6 +24,7 @@ public record ScreenView(
         private final StringBuilder textBuilder = new StringBuilder();
         private ReplyMarkup replyMarkup;
         private ScreenRenderMode renderMode = ScreenRenderMode.AUTO;
+        private InputFile photo;
 
         public Builder text(String text) {
             textBuilder.setLength(0);
@@ -53,6 +56,16 @@ public record ScreenView(
             return this;
         }
 
+        public Builder photo(InputFile photo) {
+            this.photo = Objects.requireNonNull(photo, "photo must not be null");
+            return this;
+        }
+
+        public Builder photoUrl(String url) {
+            this.photo = InputFile.url(url);
+            return this;
+        }
+
         public Builder widget(Widget widget, ScreenContext context) {
             Objects.requireNonNull(widget, "widget must not be null");
             widget.apply(this, context);
@@ -68,7 +81,7 @@ public record ScreenView(
         }
 
         public ScreenView build() {
-            return new ScreenView(textBuilder.toString(), replyMarkup, renderMode);
+            return new ScreenView(textBuilder.toString(), replyMarkup, renderMode, photo);
         }
     }
 }

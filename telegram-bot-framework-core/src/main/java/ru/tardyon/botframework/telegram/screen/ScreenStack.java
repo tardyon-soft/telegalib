@@ -5,9 +5,14 @@ import java.util.Deque;
 import java.util.Optional;
 
 public final class ScreenStack {
+    public enum RenderedMessageKind {
+        TEXT,
+        PHOTO
+    }
 
     private final Deque<ScreenFrame> frames = new ArrayDeque<>();
     private Integer renderedMessageId;
+    private RenderedMessageKind renderedMessageKind;
 
     public synchronized void push(String screenId) {
         frames.push(new ScreenFrame(screenId));
@@ -43,6 +48,7 @@ public final class ScreenStack {
     public synchronized void clear() {
         frames.clear();
         renderedMessageId = null;
+        renderedMessageKind = null;
     }
 
     public synchronized Optional<Integer> renderedMessageId() {
@@ -51,5 +57,13 @@ public final class ScreenStack {
 
     public synchronized void setRenderedMessageId(Integer renderedMessageId) {
         this.renderedMessageId = renderedMessageId;
+    }
+
+    public synchronized Optional<RenderedMessageKind> renderedMessageKind() {
+        return Optional.ofNullable(renderedMessageKind);
+    }
+
+    public synchronized void setRenderedMessageKind(RenderedMessageKind renderedMessageKind) {
+        this.renderedMessageKind = renderedMessageKind;
     }
 }

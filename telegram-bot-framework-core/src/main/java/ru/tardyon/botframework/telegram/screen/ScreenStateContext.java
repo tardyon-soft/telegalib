@@ -32,6 +32,14 @@ public final class ScreenStateContext {
         storage.getOrCreate(key).setRenderedMessageId(messageId);
     }
 
+    public Optional<ScreenStack.RenderedMessageKind> renderedMessageKind() {
+        return storage.find(key).flatMap(ScreenStack::renderedMessageKind);
+    }
+
+    public void setRenderedMessageKind(ScreenStack.RenderedMessageKind renderedMessageKind) {
+        storage.getOrCreate(key).setRenderedMessageKind(renderedMessageKind);
+    }
+
     public void putData(String key, Object value) {
         currentFrame().putData(key, value);
     }
