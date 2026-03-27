@@ -31,13 +31,19 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetUserGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
@@ -54,6 +60,7 @@ import ru.tardyon.botframework.telegram.api.file.InputFileReference;
 import ru.tardyon.botframework.telegram.api.file.InputFileStream;
 import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
+import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.TelegramFile;
 import ru.tardyon.botframework.telegram.api.model.Update;
@@ -68,6 +75,8 @@ import ru.tardyon.botframework.telegram.api.model.media.InputMedia;
 import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMedia;
 import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
 import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
+import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
+import ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
 import ru.tardyon.botframework.telegram.api.transport.MultipartFormData;
@@ -203,6 +212,51 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     public boolean answerPreCheckoutQuery(AnswerPreCheckoutQueryRequest request) {
         Boolean result = invoke("answerPreCheckoutQuery", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public Gifts getAvailableGifts() {
+        return invoke("getAvailableGifts", null, objectMapper.getTypeFactory().constructType(Gifts.class));
+    }
+
+    @Override
+    public boolean sendGift(SendGiftRequest request) {
+        Boolean result = invoke("sendGift", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean giftPremiumSubscription(GiftPremiumSubscriptionRequest request) {
+        Boolean result = invoke("giftPremiumSubscription", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public OwnedGifts getUserGifts(GetUserGiftsRequest request) {
+        return invoke("getUserGifts", requireRequest(request), objectMapper.getTypeFactory().constructType(OwnedGifts.class));
+    }
+
+    @Override
+    public OwnedGifts getChatGifts(GetChatGiftsRequest request) {
+        return invoke("getChatGifts", requireRequest(request), objectMapper.getTypeFactory().constructType(OwnedGifts.class));
+    }
+
+    @Override
+    public ChatInviteLink createChatSubscriptionInviteLink(CreateChatSubscriptionInviteLinkRequest request) {
+        return invoke(
+            "createChatSubscriptionInviteLink",
+            requireRequest(request),
+            objectMapper.getTypeFactory().constructType(ChatInviteLink.class)
+        );
+    }
+
+    @Override
+    public ChatInviteLink editChatSubscriptionInviteLink(EditChatSubscriptionInviteLinkRequest request) {
+        return invoke(
+            "editChatSubscriptionInviteLink",
+            requireRequest(request),
+            objectMapper.getTypeFactory().constructType(ChatInviteLink.class)
+        );
     }
 
     @Override

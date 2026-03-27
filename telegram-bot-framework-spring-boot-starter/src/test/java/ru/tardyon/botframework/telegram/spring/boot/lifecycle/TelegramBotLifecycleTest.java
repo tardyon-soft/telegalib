@@ -216,6 +216,49 @@ class TelegramBotLifecycleTest {
         }
 
         @Override
+        public ru.tardyon.botframework.telegram.api.model.payment.Gifts getAvailableGifts() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean sendGift(ru.tardyon.botframework.telegram.api.method.SendGiftRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean giftPremiumSubscription(ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts getUserGifts(
+            ru.tardyon.botframework.telegram.api.method.GetUserGiftsRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts getChatGifts(
+            ru.tardyon.botframework.telegram.api.method.GetChatGiftsRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.ChatInviteLink createChatSubscriptionInviteLink(
+            ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.ChatInviteLink editChatSubscriptionInviteLink(
+            ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public ru.tardyon.botframework.telegram.api.model.payment.StarAmount getMyStarBalance() {
             throw new UnsupportedOperationException();
         }

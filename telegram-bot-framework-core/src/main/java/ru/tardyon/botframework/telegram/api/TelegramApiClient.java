@@ -13,14 +13,20 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
+import ru.tardyon.botframework.telegram.api.method.GetUserGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
+import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
@@ -33,6 +39,7 @@ import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequ
 import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
 import ru.tardyon.botframework.telegram.api.model.Message;
+import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.TelegramFile;
 import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.User;
@@ -44,6 +51,8 @@ import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
 import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
 import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
+import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
+import ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts;
 
 public interface TelegramApiClient {
 
@@ -77,6 +86,20 @@ public interface TelegramApiClient {
      * The Telegram Bot API requires this method to be called within 10 seconds after receiving a pre_checkout_query update.
      */
     boolean answerPreCheckoutQuery(AnswerPreCheckoutQueryRequest request);
+
+    Gifts getAvailableGifts();
+
+    boolean sendGift(SendGiftRequest request);
+
+    boolean giftPremiumSubscription(GiftPremiumSubscriptionRequest request);
+
+    OwnedGifts getUserGifts(GetUserGiftsRequest request);
+
+    OwnedGifts getChatGifts(GetChatGiftsRequest request);
+
+    ChatInviteLink createChatSubscriptionInviteLink(CreateChatSubscriptionInviteLinkRequest request);
+
+    ChatInviteLink editChatSubscriptionInviteLink(EditChatSubscriptionInviteLinkRequest request);
 
     StarAmount getMyStarBalance();
 

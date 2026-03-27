@@ -28,14 +28,20 @@ import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
+import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetUserGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
@@ -44,6 +50,7 @@ import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequ
 import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommandScopeDefault;
+import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResultArticle;
 import ru.tardyon.botframework.telegram.api.model.inline.InputTextMessageContent;
@@ -56,6 +63,8 @@ import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaPhoto;
 import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaVideo;
 import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
 import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
+import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
+import ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
@@ -379,6 +388,133 @@ class DefaultTelegramApiClientStage2MethodsTest {
         assertTrue(body.contains("\"user_id\":777"));
         assertTrue(body.contains("\"telegram_payment_charge_id\":\"tg-charge-sub-1\""));
         assertTrue(body.contains("\"is_canceled\":true"));
+    }
+
+    @Test
+    void getAvailableGiftsUsesExpectedMethodAndParsesResponse() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"gifts":[{"id":"gift-1","star_count":15}]}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        Gifts result = client.getAvailableGifts();
+
+        assertEquals("/bottoken/getAvailableGifts", httpClient.lastRequest().uri().getPath());
+        assertEquals(1, result.gifts().size());
+        assertEquals("gift-1", result.gifts().getFirst().id());
+    }
+
+    @Test
+    void sendGiftUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        boolean result = client.sendGift(new SendGiftRequest(777L, null, "gift-1", true, "Happy", null, null));
+
+        assertTrue(result);
+        assertEquals("/bottoken/sendGift", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"user_id\":777"));
+        assertTrue(body.contains("\"gift_id\":\"gift-1\""));
+        assertTrue(body.contains("\"pay_for_upgrade\":true"));
+    }
+
+    @Test
+    void giftPremiumSubscriptionUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        boolean result = client.giftPremiumSubscription(
+            new GiftPremiumSubscriptionRequest(777L, 3, 1000, "Enjoy", null, null)
+        );
+
+        assertTrue(result);
+        assertEquals("/bottoken/giftPremiumSubscription", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"user_id\":777"));
+        assertTrue(body.contains("\"month_count\":3"));
+        assertTrue(body.contains("\"star_count\":1000"));
+    }
+
+    @Test
+    void getUserGiftsUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"total_count":1,"gifts":[{"type":"regular","gift":{"id":"gift-1","star_count":15},"send_date":1710011111}]}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        OwnedGifts result = client.getUserGifts(new GetUserGiftsRequest(777L, null, null, null, null, null, true, "off-1", 10));
+
+        assertEquals("/bottoken/getUserGifts", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"user_id\":777"));
+        assertTrue(body.contains("\"sort_by_price\":true"));
+        assertTrue(body.contains("\"offset\":\"off-1\""));
+        assertEquals(1, result.gifts().size());
+    }
+
+    @Test
+    void getChatGiftsUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"total_count":0,"gifts":[]}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        OwnedGifts result = client.getChatGifts(new GetChatGiftsRequest("@channel", true, false, null, null, null, null, null, null, null, 5));
+
+        assertEquals("/bottoken/getChatGifts", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":\"@channel\""));
+        assertTrue(body.contains("\"exclude_unsaved\":true"));
+        assertTrue(body.contains("\"limit\":5"));
+        assertEquals(0, result.gifts().size());
+    }
+
+    @Test
+    void createChatSubscriptionInviteLinkUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"invite_link":"https://t.me/+abc","creates_join_request":false,"is_primary":false,"is_revoked":false,"subscription_period":2592000,"subscription_price":500}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        ChatInviteLink result = client.createChatSubscriptionInviteLink(
+            new CreateChatSubscriptionInviteLinkRequest("@channel", "Pro", 2592000, 500)
+        );
+
+        assertEquals("/bottoken/createChatSubscriptionInviteLink", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":\"@channel\""));
+        assertTrue(body.contains("\"subscription_period\":2592000"));
+        assertTrue(body.contains("\"subscription_price\":500"));
+        assertEquals(2592000, result.subscriptionPeriod());
+    }
+
+    @Test
+    void editChatSubscriptionInviteLinkUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"invite_link":"https://t.me/+abc","creates_join_request":false,"is_primary":false,"is_revoked":false,"name":"Pro+"}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        ChatInviteLink result = client.editChatSubscriptionInviteLink(
+            new EditChatSubscriptionInviteLinkRequest("@channel", "https://t.me/+abc", "Pro+")
+        );
+
+        assertEquals("/bottoken/editChatSubscriptionInviteLink", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"invite_link\":\"https://t.me/+abc\""));
+        assertTrue(body.contains("\"name\":\"Pro+\""));
+        assertEquals("Pro+", result.name());
     }
 
     @Test

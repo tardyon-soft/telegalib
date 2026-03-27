@@ -149,4 +149,77 @@ class PaymentRequestsValidationTest {
         );
         assertEquals("telegramPaymentChargeId must not be blank", subscriptionEx.getMessage());
     }
+
+    @Test
+    void sendGiftValidatesTargetAndTextLength() {
+        assertDoesNotThrow(() -> new SendGiftRequest(1L, null, "gift-1", null, "ok", null, null));
+        assertDoesNotThrow(() -> new SendGiftRequest(null, "@channel", "gift-1", true, null, null, null));
+
+        IllegalArgumentException noTarget = assertThrows(
+            IllegalArgumentException.class,
+            () -> new SendGiftRequest(null, null, "gift-1", null, null, null, null)
+        );
+        assertEquals("Either userId or chatId must be specified", noTarget.getMessage());
+
+        IllegalArgumentException textLength = assertThrows(
+            IllegalArgumentException.class,
+            () -> new SendGiftRequest(1L, null, "gift-1", null, "x".repeat(129), null, null)
+        );
+        assertEquals("text length must be in range 0..128", textLength.getMessage());
+    }
+
+    @Test
+    void giftPremiumSubscriptionValidatesMonthAndStars() {
+        assertDoesNotThrow(() -> new GiftPremiumSubscriptionRequest(1L, 3, 1000, null, null, null));
+        assertDoesNotThrow(() -> new GiftPremiumSubscriptionRequest(1L, 6, 1500, null, null, null));
+        assertDoesNotThrow(() -> new GiftPremiumSubscriptionRequest(1L, 12, 2500, null, null, null));
+
+        IllegalArgumentException badMonth = assertThrows(
+            IllegalArgumentException.class,
+            () -> new GiftPremiumSubscriptionRequest(1L, 4, 1000, null, null, null)
+        );
+        assertEquals("monthCount must be one of 3, 6, or 12", badMonth.getMessage());
+
+        IllegalArgumentException badStars = assertThrows(
+            IllegalArgumentException.class,
+            () -> new GiftPremiumSubscriptionRequest(1L, 3, 999, null, null, null)
+        );
+        assertEquals("starCount does not match monthCount requirements", badStars.getMessage());
+    }
+
+    @Test
+    void giftsPaginationRequestsValidateLimits() {
+        assertDoesNotThrow(() -> new GetUserGiftsRequest(1L, null, null, null, null, null, null, null, 100));
+        assertDoesNotThrow(() -> new GetChatGiftsRequest(1L, null, null, null, null, null, null, null, null, null, 1));
+
+        IllegalArgumentException userLimit = assertThrows(
+            IllegalArgumentException.class,
+            () -> new GetUserGiftsRequest(1L, null, null, null, null, null, null, null, 101)
+        );
+        assertEquals("limit must be in range 1..100", userLimit.getMessage());
+
+        IllegalArgumentException chatLimit = assertThrows(
+            IllegalArgumentException.class,
+            () -> new GetChatGiftsRequest(1L, null, null, null, null, null, null, null, null, null, 0)
+        );
+        assertEquals("limit must be in range 1..100", chatLimit.getMessage());
+    }
+
+    @Test
+    void chatSubscriptionInviteRequestsValidateBounds() {
+        assertDoesNotThrow(() -> new CreateChatSubscriptionInviteLinkRequest("@channel", "Pro", 2592000, 1));
+        assertDoesNotThrow(() -> new EditChatSubscriptionInviteLinkRequest("@channel", "https://t.me/+abc", "Pro+"));
+
+        IllegalArgumentException periodEx = assertThrows(
+            IllegalArgumentException.class,
+            () -> new CreateChatSubscriptionInviteLinkRequest("@channel", "Pro", 3600, 10)
+        );
+        assertEquals("subscriptionPeriod must be 2592000", periodEx.getMessage());
+
+        IllegalArgumentException priceEx = assertThrows(
+            IllegalArgumentException.class,
+            () -> new CreateChatSubscriptionInviteLinkRequest("@channel", "Pro", 2592000, 0)
+        );
+        assertEquals("subscriptionPrice must be in range 1..10000", priceEx.getMessage());
+    }
 }

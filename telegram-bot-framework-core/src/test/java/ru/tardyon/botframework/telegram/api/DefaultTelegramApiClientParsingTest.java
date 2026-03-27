@@ -24,6 +24,8 @@ import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.User;
 import ru.tardyon.botframework.telegram.api.model.WebhookInfo;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
+import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
+import ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts;
 import ru.tardyon.botframework.telegram.api.transport.TelegramApiResponse;
 import ru.tardyon.botframework.telegram.exception.TelegramApiException;
 
@@ -358,6 +360,134 @@ class DefaultTelegramApiClientParsingTest {
         assertNotNull(update.message().webAppData());
         assertEquals("{\"k\":\"v\"}", update.message().webAppData().data());
         assertEquals("Open app", update.message().webAppData().buttonText());
+    }
+
+    @Test
+    void parseGetAvailableGiftsResponse() {
+        String raw = """
+            {
+              "ok": true,
+              "result": {
+                "gifts": [
+                  {
+                    "id": "gift-1",
+                    "star_count": 15,
+                    "background": {
+                      "center_color": 1,
+                      "edge_color": 2,
+                      "text_color": 3
+                    }
+                  }
+                ]
+              }
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructType(Gifts.class);
+        TelegramApiResponse<Gifts> response = DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        assertEquals(1, response.result().gifts().size());
+        assertEquals("gift-1", response.result().gifts().getFirst().id());
+        assertEquals(1, response.result().gifts().getFirst().background().centerColor());
+    }
+
+    @Test
+    void parseOwnedGiftsResponseWithRegularAndUnique() {
+        String raw = """
+            {
+              "ok": true,
+              "result": {
+                "total_count": 2,
+                "gifts": [
+                  {
+                    "type": "regular",
+                    "gift": {
+                      "id": "gift-1",
+                      "star_count": 15
+                    },
+                    "send_date": 1710011111
+                  },
+                  {
+                    "type": "unique",
+                    "gift": {
+                      "gift_id": "gift-1",
+                      "base_name": "Flower",
+                      "name": "Flower #1",
+                      "number": 1,
+                      "model": {"name":"m"},
+                      "symbol": {"name":"s"},
+                      "backdrop": {"name":"b"}
+                    },
+                    "send_date": 1710011112
+                  }
+                ],
+                "next_offset": "off-2"
+              }
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructType(OwnedGifts.class);
+        TelegramApiResponse<OwnedGifts> response = DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        assertEquals(2, response.result().gifts().size());
+        assertEquals("off-2", response.result().nextOffset());
+    }
+
+    @Test
+    void parseMessageWithGiftFields() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 1009,
+                  "message": {
+                    "message_id": 44,
+                    "date": 1710000002,
+                    "chat": { "id": 123456789, "type": "private" },
+                    "gift": {
+                      "gift": {
+                        "id": "gift-1",
+                        "star_count": 15
+                      },
+                      "text": "Enjoy"
+                    },
+                    "unique_gift": {
+                      "gift": {
+                        "gift_id": "gift-1",
+                        "base_name": "Flower",
+                        "name": "Flower #1",
+                        "number": 1,
+                        "model": {"name":"m"},
+                        "symbol": {"name":"s"},
+                        "backdrop": {"name":"b"}
+                      },
+                      "origin": "upgrade"
+                    },
+                    "gift_upgrade_sent": {
+                      "gift": {
+                        "id": "gift-1",
+                        "star_count": 15
+                      },
+                      "is_upgrade_separate": true
+                    }
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response = DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        Update update = response.result().getFirst();
+        assertNotNull(update.message());
+        assertEquals("gift-1", update.message().gift().gift().id());
+        assertEquals("upgrade", update.message().uniqueGift().origin());
+        assertTrue(Boolean.TRUE.equals(update.message().giftUpgradeSent().isUpgradeSeparate()));
     }
 
     @Test
