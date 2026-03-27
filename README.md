@@ -71,6 +71,50 @@ Multi-module Gradle project for Telegram bot runtime/library with Stage 6 scope.
 - `demo` is usage sample only and must not become runtime implementation.
 - Scope is stage-bounded; avoid speculative abstractions and out-of-stage features.
 
+## Maven Central Publishing (core + starter)
+
+The project is configured to publish only:
+- `telegram-bot-framework-core`
+- `telegram-bot-framework-spring-boot-starter`
+
+Required environment variables:
+- `RELEASE_VERSION` (example: `0.2.0` or `0.2.1-SNAPSHOT`)
+- `OSSRH_USERNAME`
+- `OSSRH_PASSWORD`
+- `SIGNING_KEY` (ASCII-armored private PGP key)
+- `SIGNING_PASSWORD`
+
+Publish commands:
+
+```bash
+export RELEASE_VERSION=0.2.0
+export OSSRH_USERNAME=...
+export OSSRH_PASSWORD=...
+export SIGNING_KEY="$(cat ~/.gnupg/private.asc)"
+export SIGNING_PASSWORD=...
+
+./gradlew :telegram-bot-framework-core:publish
+./gradlew :telegram-bot-framework-spring-boot-starter:publish
+```
+
+Notes:
+- Snapshot versions (`*-SNAPSHOT`) go to Sonatype snapshots repository.
+- Release versions go to Sonatype staging repository.
+
+## Importing Library
+
+Vanilla Java (core only):
+
+```kotlin
+implementation("ru.tardyon.botframework:telegram-bot-framework-core:<version>")
+```
+
+Spring Boot (starter, core comes transitively):
+
+```kotlin
+implementation("ru.tardyon.botframework:telegram-bot-framework-spring-boot-starter:<version>")
+```
+
 ## Capability Layer (Stage 6 Scaffold)
 
 Core contains a version/capability compatibility model in package
