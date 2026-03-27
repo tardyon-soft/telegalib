@@ -13,6 +13,12 @@ Multi-module Gradle project for Telegram bot runtime/library with Stage 5 scope.
 - `telegram-bot-framework-demo`
   - Spring Boot sample app using starter.
   - Demonstrates Stage 5 scenarios (paid media, stars, gifts, subscriptions, business story/checklist/gifts).
+- `telegram-bot-framework-botapi-generator`
+  - Stage 6 tooling module for Bot API code generation pipeline.
+  - Not a production runtime dependency for application modules.
+- `telegram-bot-framework-testkit`
+  - Stage 6 testing/support module for fake Bot API server, fixtures, assertions, and update simulation.
+  - Not a production runtime dependency for application modules.
 
 ## Supported In Stage 5
 
@@ -29,6 +35,9 @@ Multi-module Gradle project for Telegram bot runtime/library with Stage 5 scope.
   - manual `Router` wiring still supported
 - Demo:
   - Stage 5 command scenarios and service-message handlers
+- Stage 6 scaffolding:
+  - `botapi-generator` package skeleton for parser/model/writer pipeline
+  - `testkit` package skeleton for fake server/fixture/assertion/update simulation
 
 ## Not Supported Yet
 
