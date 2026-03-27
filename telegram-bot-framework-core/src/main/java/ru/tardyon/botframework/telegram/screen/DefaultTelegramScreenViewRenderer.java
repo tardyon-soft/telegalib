@@ -2,6 +2,7 @@ package ru.tardyon.botframework.telegram.screen;
 
 import java.util.Objects;
 import ru.tardyon.botframework.telegram.api.TelegramApiClient;
+import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
@@ -25,7 +26,11 @@ public final class DefaultTelegramScreenViewRenderer implements ScreenViewRender
             throw new IllegalStateException("TelegramApiClient is not available in UpdateContext");
         }
 
+        Integer renderedMessageId = screenStateContext.renderedMessageId().orElse(null);
+        ScreenStack.RenderedMessageKind renderedMessageKind = screenStateContext.renderedMessageKind().orElse(null);
+
         if (view.photo() != null) {
+            deleteRenderedMessageIfNeeded(apiClient, chatId, renderedMessageId, view.renderMode());
             try {
                 Message sentPhoto = apiClient.sendPhoto(new SendPhotoRequest(
                     chatId,
@@ -47,13 +52,12 @@ public final class DefaultTelegramScreenViewRenderer implements ScreenViewRender
             return;
         }
 
-        Integer renderedMessageId = screenStateContext.renderedMessageId().orElse(null);
-        ScreenStack.RenderedMessageKind renderedMessageKind = screenStateContext.renderedMessageKind().orElse(null);
         if (canEditExisting(view, renderedMessageId, renderedMessageKind)) {
             editExisting(apiClient, chatId, renderedMessageId, view);
             return;
         }
 
+        deleteRenderedMessageIfNeeded(apiClient, chatId, renderedMessageId, view.renderMode());
         Message sent = apiClient.sendMessage(new SendMessageRequest(chatId, view.text(), view.replyMarkup(), null));
         if (sent != null && sent.messageId() != null) {
             screenStateContext.setRenderedMessageId(sent.messageId());
@@ -102,5 +106,21 @@ public final class DefaultTelegramScreenViewRenderer implements ScreenViewRender
             return null;
         }
         return text;
+    }
+
+    private void deleteRenderedMessageIfNeeded(
+        TelegramApiClient apiClient,
+        long chatId,
+        Integer renderedMessageId,
+        ScreenRenderMode renderMode
+    ) {
+        if (renderedMessageId == null || renderMode == ScreenRenderMode.SEND_NEW) {
+            return;
+        }
+        try {
+            apiClient.deleteMessage(DeleteMessageRequest.of(chatId, renderedMessageId));
+        } catch (TelegramApiException ignored) {
+            // Best-effort cleanup: continue rendering new screen message.
+        }
     }
 }
