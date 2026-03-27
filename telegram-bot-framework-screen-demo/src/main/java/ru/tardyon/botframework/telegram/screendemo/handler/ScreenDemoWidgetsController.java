@@ -26,18 +26,21 @@ public class ScreenDemoWidgetsController {
         return ScreenAction.push(payload);
     }
 
-    @Widget(id = "objects_list")
-    public WidgetView objectsList(List<ScreenDemoScreensController.CatalogItem> items) {
+    @Widget(id = "channels_list")
+    public WidgetView channelsList(List<ScreenDemoScreensController.ChannelItem> items) {
         return WidgetView.builder()
-            .line("Список объектов:")
-            .replyMarkup(WidgetButtons.objectList("objects_list", "open", items, ScreenDemoScreensController.CatalogItem::title, ScreenDemoScreensController.CatalogItem::id))
+            .line("Список каналов:")
+            .replyMarkup(WidgetButtons.objectList("channels_list", "open", items,
+                channel -> channel.title() + " • " + channel.subscribers() + " подписчиков",
+                ScreenDemoScreensController.ChannelItem::id
+            ))
             .effect(mediaHintEffect())
             .build();
     }
 
-    @OnWidgetAction(widget = "objects_list", action = "open")
-    public ScreenAction openObject(ScreenContext context, String payload) {
-        context.screenState().putData("selected_item_id", payload);
+    @OnWidgetAction(widget = "channels_list", action = "open")
+    public ScreenAction openChannel(ScreenContext context, String payload) {
+        context.screenState().putData("selected_channel_id", payload);
         return ScreenAction.push("catalog_details");
     }
 
