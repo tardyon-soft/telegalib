@@ -166,12 +166,12 @@ class BotRoutingConfig {
 @ScreenController
 class DemoScreens {
 
-    @Screen(id = "home", startCommand = "screen_start")
+    @Screen(id = "home", startCommand = "screen_start", main = true)
     public ScreenView home(ScreenContext ctx) {
         return ScreenView.builder().line("HOME").build();
     }
 
-    @Screen(id = "settings")
+    @Screen(id = "settings", addBackButton = true)
     public ScreenView settings(ScreenContext ctx) {
         return ScreenView.builder().line("SETTINGS").build();
     }

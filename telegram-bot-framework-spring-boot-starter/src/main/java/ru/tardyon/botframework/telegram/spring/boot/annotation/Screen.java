@@ -14,4 +14,10 @@ public @interface Screen {
     String id();
 
     String startCommand() default "";
+
+    boolean main() default false;
+
+    boolean addBackButton() default false;
+
+    String backButtonText() default "Назад";
 }

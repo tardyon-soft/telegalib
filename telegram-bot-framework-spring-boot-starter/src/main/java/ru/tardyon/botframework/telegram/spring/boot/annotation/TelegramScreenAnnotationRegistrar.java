@@ -15,6 +15,9 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 import ru.tardyon.botframework.telegram.api.model.CallbackQuery;
 import ru.tardyon.botframework.telegram.api.model.Message;
+import ru.tardyon.botframework.telegram.api.model.markup.InlineKeyboardButton;
+import ru.tardyon.botframework.telegram.api.model.markup.InlineKeyboardMarkup;
+import ru.tardyon.botframework.telegram.api.model.markup.ReplyMarkup;
 import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramMessage;
 import ru.tardyon.botframework.telegram.dispatcher.Router;
@@ -87,6 +90,9 @@ public final class TelegramScreenAnnotationRegistrar implements SmartInitializin
             if (StringUtils.hasText(screenAnnotation.startCommand())) {
                 definition.setStartCommand(screenAnnotation.startCommand());
             }
+            definition.setMain(screenAnnotation.main());
+            definition.setAddBackButton(screenAnnotation.addBackButton());
+            definition.setBackButtonText(screenAnnotation.backButtonText());
         }
 
         if (onScreenMessage != null) {
@@ -187,6 +193,9 @@ public final class TelegramScreenAnnotationRegistrar implements SmartInitializin
         private final String id;
         private MethodBinding renderMethod;
         private String startCommand;
+        private boolean main;
+        private boolean addBackButton;
+        private String backButtonText = "Назад";
         private final List<MessageHandlerBinding> messageHandlers = new ArrayList<>();
         private final List<CallbackHandlerBinding> callbackHandlers = new ArrayList<>();
 
@@ -204,6 +213,18 @@ public final class TelegramScreenAnnotationRegistrar implements SmartInitializin
 
         public void setStartCommand(String startCommand) {
             this.startCommand = startCommand;
+        }
+
+        public void setMain(boolean main) {
+            this.main = main;
+        }
+
+        public void setAddBackButton(boolean addBackButton) {
+            this.addBackButton = addBackButton;
+        }
+
+        public void setBackButtonText(String backButtonText) {
+            this.backButtonText = StringUtils.hasText(backButtonText) ? backButtonText : "Назад";
         }
 
         public void setRenderMethod(MethodBinding renderMethod) {
@@ -234,7 +255,7 @@ public final class TelegramScreenAnnotationRegistrar implements SmartInitializin
                 @Override
                 public ScreenView render(ScreenContext context) {
                     Object result = invoke(renderMethod, context, context.updateContext(), context.message(), null);
-                    return (ScreenView) result;
+                    return decorateScreenView((ScreenView) result);
                 }
 
                 @Override
@@ -274,6 +295,30 @@ public final class TelegramScreenAnnotationRegistrar implements SmartInitializin
                     return ScreenAction.unhandled();
                 }
             };
+        }
+
+        private ScreenView decorateScreenView(ScreenView base) {
+            if (!addBackButton || main) {
+                return base;
+            }
+            InlineKeyboardMarkup withBack = appendBackButton(base.replyMarkup());
+            if (withBack == null) {
+                return base;
+            }
+            return new ScreenView(base.text(), withBack, base.renderMode());
+        }
+
+        private InlineKeyboardMarkup appendBackButton(ReplyMarkup replyMarkup) {
+            InlineKeyboardButton backButton = InlineKeyboardButton.callback(backButtonText, "screen:nav:back");
+            if (replyMarkup == null) {
+                return new InlineKeyboardMarkup(List.of(List.of(backButton)));
+            }
+            if (!(replyMarkup instanceof InlineKeyboardMarkup inlineKeyboardMarkup)) {
+                return null;
+            }
+            List<List<InlineKeyboardButton>> rows = new ArrayList<>(inlineKeyboardMarkup.inlineKeyboard());
+            rows.add(List.of(backButton));
+            return new InlineKeyboardMarkup(rows);
         }
     }
 

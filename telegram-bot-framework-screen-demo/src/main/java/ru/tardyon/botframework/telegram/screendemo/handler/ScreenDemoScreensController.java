@@ -115,7 +115,7 @@ public class ScreenDemoScreensController {
     ) {
     }
 
-    @Screen(id = HOME_SCREEN, startCommand = "screen_start")
+    @Screen(id = HOME_SCREEN, startCommand = "screen_start", main = true)
     public ScreenView home(ScreenContext context) {
         ScreenView base = ScreenView.builder()
             .widgets(List.of(
@@ -130,14 +130,13 @@ public class ScreenDemoScreensController {
         return widgetView.mergeInto(base);
     }
 
-    @Screen(id = SETTINGS_SCREEN)
+    @Screen(id = SETTINGS_SCREEN, addBackButton = true)
     public ScreenView settings(ScreenContext context) {
         boolean enabled = context.screenState().getData("notifications")
             .map(Boolean.class::cast)
             .orElse(false);
         InlineKeyboardMarkup keyboard = Keyboards.inlineKeyboard()
             .row(Keyboards.callbackButton(enabled ? "Отключить уведомления" : "Включить уведомления", TOGGLE_NOTIFICATIONS))
-            .row(Keyboards.callbackButton("Назад", ScreenCallbackData.back()))
             .build();
         return ScreenView.builder()
             .line("Экран: SETTINGS")
@@ -146,21 +145,17 @@ public class ScreenDemoScreensController {
             .build();
     }
 
-    @Screen(id = PROFILE_SCREEN)
+    @Screen(id = PROFILE_SCREEN, addBackButton = true)
     public ScreenView profile(ScreenContext context) {
         Object userTheme = context.userState().getData("preferred_theme").orElse("<empty>");
-        InlineKeyboardMarkup keyboard = Keyboards.inlineKeyboard()
-            .row(Keyboards.callbackButton("Назад", ScreenCallbackData.back()))
-            .build();
         return ScreenView.builder()
             .line("Экран: PROFILE")
             .line("Здесь читаем user state отдельно от screen state.")
             .line("preferred_theme=" + userTheme)
-            .replyMarkup(keyboard)
             .build();
     }
 
-    @Screen(id = CATALOG_LIST_SCREEN)
+    @Screen(id = CATALOG_LIST_SCREEN, addBackButton = true)
     public ScreenView catalogList(ScreenContext context) {
         ScreenView base = ScreenView.builder()
             .line("Экран: CHANNELS")
@@ -171,17 +166,13 @@ public class ScreenDemoScreensController {
         return widgetView.mergeInto(base);
     }
 
-    @Screen(id = CATALOG_DETAILS_SCREEN)
+    @Screen(id = CATALOG_DETAILS_SCREEN, addBackButton = true)
     public ScreenView catalogDetails(ScreenContext context) {
         String selectedId = (String) context.screenState().getData(ScreenAction.TARGET_DATA_KEY).orElse(null);
         ChannelItem selected = CHANNELS.stream().filter(item -> item.id().equals(selectedId)).findFirst().orElse(null);
-        InlineKeyboardMarkup keyboard = Keyboards.inlineKeyboard()
-            .row(Keyboards.callbackButton("Назад", ScreenCallbackData.back()))
-            .build();
         if (selected == null) {
             return ScreenView.builder()
                 .line("Канал не найден")
-                .replyMarkup(keyboard)
                 .build();
         }
         return ScreenView.builder()
@@ -193,7 +184,6 @@ public class ScreenDemoScreensController {
             .line("Средние просмотры: " + selected.avgViews())
             .line("Картинка:")
             .line(selected.imageUrl())
-            .replyMarkup(keyboard)
             .build();
     }
 

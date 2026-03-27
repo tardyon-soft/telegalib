@@ -10,6 +10,7 @@
 - разделение `user state` и `screen state`.
 - annotation-driven screen API (`@ScreenController`, `@Screen`, `@OnScreenMessage`, `@OnScreenCallback`).
 - annotation-driven widget API (`@WidgetController`, `@Widget`, `@OnWidgetAction`).
+- автокнопку `Назад` через `@Screen(addBackButton = true)` для всех non-main экранов.
 
 ## Команды
 
