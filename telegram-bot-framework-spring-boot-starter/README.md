@@ -18,6 +18,11 @@ Thin Spring Boot integration layer over `telegram-bot-framework-core`.
 - `TelegramBotLifecycle` (mode-aware start/stop)
 - `TelegramMonetizationOperations` (thin delegating helper over `TelegramApiClient`)
 - `TelegramBusinessOperations` (thin delegating helper over `TelegramApiClient`)
+- `ScreenStateStorage`
+- `ScreenRegistry`
+- `ScreenEngine`
+- `ScreenMiddleware`
+- `TelegramScreenAnnotationRegistrar`
 
 ## Polling mode (`application.yml`)
 
@@ -149,6 +154,34 @@ class BotRoutingConfig {
         Router router = new Router();
         router.message(Filters.command("start"), (ctx, msg) -> ctx.telegramMessage().reply("Hello from manual router"));
         return router;
+    }
+}
+```
+
+## Screen annotations (starter sugar over core screen runtime)
+
+```java
+@ScreenController
+class DemoScreens {
+
+    @Screen(id = "home", startCommand = "screen_start")
+    public ScreenView home(ScreenContext ctx) {
+        return ScreenView.builder().line("HOME").build();
+    }
+
+    @Screen(id = "settings")
+    public ScreenView settings(ScreenContext ctx) {
+        return ScreenView.builder().line("SETTINGS").build();
+    }
+
+    @OnScreenMessage(screen = "home", textEquals = "to_settings")
+    public ScreenAction toSettings() {
+        return ScreenAction.push("settings");
+    }
+
+    @OnScreenCallback(screen = "settings", callbackEquals = "screen:nav:back")
+    public ScreenAction back() {
+        return ScreenAction.back();
     }
 }
 ```

@@ -37,12 +37,18 @@ import ru.tardyon.botframework.telegram.fsm.InMemoryStateStorage;
 import ru.tardyon.botframework.telegram.fsm.StateStorage;
 import ru.tardyon.botframework.telegram.polling.LongPollingOptions;
 import ru.tardyon.botframework.telegram.polling.LongPollingRunner;
+import ru.tardyon.botframework.telegram.screen.InMemoryScreenStateStorage;
+import ru.tardyon.botframework.telegram.screen.ScreenEngine;
+import ru.tardyon.botframework.telegram.screen.ScreenMiddleware;
+import ru.tardyon.botframework.telegram.screen.ScreenRegistry;
+import ru.tardyon.botframework.telegram.screen.ScreenStateStorage;
 import ru.tardyon.botframework.telegram.spring.boot.lifecycle.TelegramBotLifecycle;
 import ru.tardyon.botframework.telegram.spring.boot.properties.TelegramBotFrameworkProperties;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramBusinessOperations;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramMonetizationOperations;
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
+import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramScreenAnnotationRegistrar;
 import ru.tardyon.botframework.telegram.webhook.DefaultWebhookUpdateProcessor;
 import ru.tardyon.botframework.telegram.webhook.WebhookUpdateProcessor;
 import ru.tardyon.botframework.telegram.webapp.WebAppInitDataValidator;
@@ -141,6 +147,30 @@ public class TelegramBotFrameworkAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public ScreenStateStorage screenStateStorage() {
+        return new InMemoryScreenStateStorage();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ScreenRegistry screenRegistry() {
+        return new ScreenRegistry();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public ScreenEngine screenEngine(ScreenRegistry screenRegistry, ScreenStateStorage screenStateStorage) {
+        return new ScreenEngine(screenRegistry, screenStateStorage);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(name = "screenMiddleware")
+    public UpdateMiddleware screenMiddleware(ScreenEngine screenEngine) {
+        return new ScreenMiddleware(screenEngine);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public LongPollingOptions longPollingOptions(TelegramBotFrameworkProperties properties) {
         TelegramBotFrameworkProperties.Polling polling = properties.getPolling();
         return new LongPollingOptions(polling.getTimeout(), polling.getLimit(), polling.getAllowedUpdates(), 1000L);
@@ -191,6 +221,17 @@ public class TelegramBotFrameworkAutoConfiguration {
         ListableBeanFactory beanFactory
     ) {
         return new TelegramAnnotationHandlerRegistrar(telegramRouter, beanFactory);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public TelegramScreenAnnotationRegistrar telegramScreenAnnotationRegistrar(
+        Router telegramRouter,
+        ScreenRegistry screenRegistry,
+        ScreenEngine screenEngine,
+        ListableBeanFactory beanFactory
+    ) {
+        return new TelegramScreenAnnotationRegistrar(telegramRouter, screenRegistry, screenEngine, beanFactory);
     }
 
     @Bean
