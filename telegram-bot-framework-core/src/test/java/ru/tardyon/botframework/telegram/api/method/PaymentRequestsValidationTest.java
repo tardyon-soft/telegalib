@@ -7,9 +7,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import ru.tardyon.botframework.telegram.api.file.InputFile;
+import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklist;
+import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklistTask;
 import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaPhoto;
+import ru.tardyon.botframework.telegram.api.model.payment.AcceptedGiftTypes;
 import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
+import ru.tardyon.botframework.telegram.api.model.story.InputStoryContentPhoto;
 
 class PaymentRequestsValidationTest {
 
@@ -221,5 +225,61 @@ class PaymentRequestsValidationTest {
             () -> new CreateChatSubscriptionInviteLinkRequest("@channel", "Pro", 2592000, 0)
         );
         assertEquals("subscriptionPrice must be in range 1..10000", priceEx.getMessage());
+    }
+
+    @Test
+    void storyRequestsValidateActivePeriod() {
+        assertDoesNotThrow(() -> new PostStoryRequest("bc-1", InputStoryContentPhoto.of(InputFile.fileId("ph1")), 86400, null, null, null, null, null, null));
+        assertDoesNotThrow(() -> new RepostStoryRequest("bc-1", 1L, 2, 21600, null, null));
+        assertDoesNotThrow(() -> new EditStoryRequest("bc-1", 1, InputStoryContentPhoto.of(InputFile.fileId("ph1")), null, null, null, null));
+
+        IllegalArgumentException ex = assertThrows(
+            IllegalArgumentException.class,
+            () -> new PostStoryRequest("bc-1", InputStoryContentPhoto.of(InputFile.fileId("ph1")), 3600, null, null, null, null, null, null)
+        );
+        assertEquals("activePeriod must be one of 21600, 43200, 86400, 172800", ex.getMessage());
+    }
+
+    @Test
+    void checklistRequestsValidateTaskBoundsAndUniqueness() {
+        InputChecklist ok = new InputChecklist("Daily", null, null, List.of(new InputChecklistTask(1, "Task", null, null)), null, null);
+        assertDoesNotThrow(() -> new SendChecklistRequest("bc-1", 1L, ok, null, null, null, null, null));
+        assertDoesNotThrow(() -> new EditMessageChecklistRequest("bc-1", 1L, 10, ok, null));
+
+        IllegalArgumentException dup = assertThrows(
+            IllegalArgumentException.class,
+            () -> new InputChecklist("Daily", null, null, List.of(
+                new InputChecklistTask(1, "Task A", null, null),
+                new InputChecklistTask(1, "Task B", null, null)
+            ), null, null)
+        );
+        assertEquals("task ids must be unique", dup.getMessage());
+    }
+
+    @Test
+    void businessGiftAndStarsRequestsValidateRanges() {
+        assertDoesNotThrow(
+            () -> new SetBusinessAccountGiftSettingsRequest(
+                "bc-1",
+                true,
+                new AcceptedGiftTypes(true, true, true, true, true)
+            )
+        );
+        assertDoesNotThrow(() -> new TransferBusinessAccountStarsRequest("bc-1", 10000));
+        assertDoesNotThrow(() -> new GetBusinessAccountGiftsRequest("bc-1", null, null, null, null, null, null, null, null, "", 100));
+        assertDoesNotThrow(() -> new UpgradeGiftRequest("bc-1", "owned", true, 0));
+        assertDoesNotThrow(() -> new TransferGiftRequest("bc-1", "owned", 1L, 0));
+
+        IllegalArgumentException stars = assertThrows(
+            IllegalArgumentException.class,
+            () -> new TransferBusinessAccountStarsRequest("bc-1", 10001)
+        );
+        assertEquals("starCount must be in range 1..10000", stars.getMessage());
+
+        IllegalArgumentException giftsLimit = assertThrows(
+            IllegalArgumentException.class,
+            () -> new GetBusinessAccountGiftsRequest("bc-1", null, null, null, null, null, null, null, null, null, 101)
+        );
+        assertEquals("limit must be in range 1..100", giftsLimit.getMessage());
     }
 }

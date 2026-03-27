@@ -200,6 +200,85 @@ class DefaultTelegramBotModeTest {
         }
 
         @Override
+        public ru.tardyon.botframework.telegram.api.model.story.Story postStory(
+            ru.tardyon.botframework.telegram.api.method.PostStoryRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.story.Story editStory(
+            ru.tardyon.botframework.telegram.api.method.EditStoryRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean deleteStory(ru.tardyon.botframework.telegram.api.method.DeleteStoryRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.story.Story repostStory(
+            ru.tardyon.botframework.telegram.api.method.RepostStoryRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Message sendChecklist(ru.tardyon.botframework.telegram.api.method.SendChecklistRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Message editMessageChecklist(ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean setBusinessAccountGiftSettings(
+            ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSettingsRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.payment.StarAmount getBusinessAccountStarBalance(
+            ru.tardyon.botframework.telegram.api.method.GetBusinessAccountStarBalanceRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean transferBusinessAccountStars(
+            ru.tardyon.botframework.telegram.api.method.TransferBusinessAccountStarsRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts getBusinessAccountGifts(
+            ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest request
+        ) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean convertGiftToStars(ru.tardyon.botframework.telegram.api.method.ConvertGiftToStarsRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean upgradeGift(ru.tardyon.botframework.telegram.api.method.UpgradeGiftRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean transferGift(ru.tardyon.botframework.telegram.api.method.TransferGiftRequest request) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public ru.tardyon.botframework.telegram.api.model.payment.StarAmount getMyStarBalance() {
             throw new UnsupportedOperationException();
         }

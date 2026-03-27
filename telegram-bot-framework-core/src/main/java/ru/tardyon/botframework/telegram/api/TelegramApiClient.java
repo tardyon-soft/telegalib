@@ -13,14 +13,22 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountStarBalanceRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUserGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
+import ru.tardyon.botframework.telegram.api.method.PostStoryRequest;
+import ru.tardyon.botframework.telegram.api.method.RepostStoryRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteStoryRequest;
+import ru.tardyon.botframework.telegram.api.method.EditStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.ConvertGiftToStarsRequest;
+import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
@@ -28,14 +36,19 @@ import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
+import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSettingsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMediaGroupRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.TransferBusinessAccountStarsRequest;
+import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
+import ru.tardyon.botframework.telegram.api.method.UpgradeGiftRequest;
 import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
 import ru.tardyon.botframework.telegram.api.model.Message;
@@ -53,6 +66,7 @@ import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
 import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
 import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
 import ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts;
+import ru.tardyon.botframework.telegram.api.model.story.Story;
 
 public interface TelegramApiClient {
 
@@ -87,6 +101,18 @@ public interface TelegramApiClient {
      */
     boolean answerPreCheckoutQuery(AnswerPreCheckoutQueryRequest request);
 
+    Story postStory(PostStoryRequest request);
+
+    Story editStory(EditStoryRequest request);
+
+    boolean deleteStory(DeleteStoryRequest request);
+
+    Story repostStory(RepostStoryRequest request);
+
+    Message sendChecklist(SendChecklistRequest request);
+
+    Message editMessageChecklist(EditMessageChecklistRequest request);
+
     Gifts getAvailableGifts();
 
     boolean sendGift(SendGiftRequest request);
@@ -100,6 +126,20 @@ public interface TelegramApiClient {
     ChatInviteLink createChatSubscriptionInviteLink(CreateChatSubscriptionInviteLinkRequest request);
 
     ChatInviteLink editChatSubscriptionInviteLink(EditChatSubscriptionInviteLinkRequest request);
+
+    boolean setBusinessAccountGiftSettings(SetBusinessAccountGiftSettingsRequest request);
+
+    StarAmount getBusinessAccountStarBalance(GetBusinessAccountStarBalanceRequest request);
+
+    boolean transferBusinessAccountStars(TransferBusinessAccountStarsRequest request);
+
+    OwnedGifts getBusinessAccountGifts(GetBusinessAccountGiftsRequest request);
+
+    boolean convertGiftToStars(ConvertGiftToStarsRequest request);
+
+    boolean upgradeGift(UpgradeGiftRequest request);
+
+    boolean transferGift(TransferGiftRequest request);
 
     StarAmount getMyStarBalance();
 

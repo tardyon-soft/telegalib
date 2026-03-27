@@ -28,31 +28,44 @@ import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
+import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountStarBalanceRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetFileRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUpdatesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUserGiftsRequest;
+import ru.tardyon.botframework.telegram.api.method.PostStoryRequest;
+import ru.tardyon.botframework.telegram.api.method.RepostStoryRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteStoryRequest;
+import ru.tardyon.botframework.telegram.api.method.EditStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.ConvertGiftToStarsRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
+import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSettingsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMediaGroupRequest;
 import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.TransferBusinessAccountStarsRequest;
+import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
+import ru.tardyon.botframework.telegram.api.method.UpgradeGiftRequest;
 import ru.tardyon.botframework.telegram.api.file.InputFile;
 import ru.tardyon.botframework.telegram.api.file.InputFileBytes;
 import ru.tardyon.botframework.telegram.api.file.InputFilePath;
@@ -73,6 +86,8 @@ import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.media.InputMedia;
 import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMedia;
+import ru.tardyon.botframework.telegram.api.model.story.InputStoryContent;
+import ru.tardyon.botframework.telegram.api.model.story.Story;
 import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
 import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
 import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
@@ -215,6 +230,37 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     @Override
+    public Story postStory(PostStoryRequest request) {
+        return postOrEditStoryMultipart("postStory", Objects.requireNonNull(request, "request must not be null"), objectMapper.getTypeFactory().constructType(Story.class));
+    }
+
+    @Override
+    public Story editStory(EditStoryRequest request) {
+        return postOrEditStoryMultipart("editStory", Objects.requireNonNull(request, "request must not be null"), objectMapper.getTypeFactory().constructType(Story.class));
+    }
+
+    @Override
+    public boolean deleteStory(DeleteStoryRequest request) {
+        Boolean result = invoke("deleteStory", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public Story repostStory(RepostStoryRequest request) {
+        return invoke("repostStory", requireRequest(request), objectMapper.getTypeFactory().constructType(Story.class));
+    }
+
+    @Override
+    public Message sendChecklist(SendChecklistRequest request) {
+        return invoke("sendChecklist", requireRequest(request), objectMapper.getTypeFactory().constructType(Message.class));
+    }
+
+    @Override
+    public Message editMessageChecklist(EditMessageChecklistRequest request) {
+        return invoke("editMessageChecklist", requireRequest(request), objectMapper.getTypeFactory().constructType(Message.class));
+    }
+
+    @Override
     public Gifts getAvailableGifts() {
         return invoke("getAvailableGifts", null, objectMapper.getTypeFactory().constructType(Gifts.class));
     }
@@ -257,6 +303,46 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             requireRequest(request),
             objectMapper.getTypeFactory().constructType(ChatInviteLink.class)
         );
+    }
+
+    @Override
+    public boolean setBusinessAccountGiftSettings(SetBusinessAccountGiftSettingsRequest request) {
+        Boolean result = invoke("setBusinessAccountGiftSettings", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public StarAmount getBusinessAccountStarBalance(GetBusinessAccountStarBalanceRequest request) {
+        return invoke("getBusinessAccountStarBalance", requireRequest(request), objectMapper.getTypeFactory().constructType(StarAmount.class));
+    }
+
+    @Override
+    public boolean transferBusinessAccountStars(TransferBusinessAccountStarsRequest request) {
+        Boolean result = invoke("transferBusinessAccountStars", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public OwnedGifts getBusinessAccountGifts(GetBusinessAccountGiftsRequest request) {
+        return invoke("getBusinessAccountGifts", requireRequest(request), objectMapper.getTypeFactory().constructType(OwnedGifts.class));
+    }
+
+    @Override
+    public boolean convertGiftToStars(ConvertGiftToStarsRequest request) {
+        Boolean result = invoke("convertGiftToStars", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean upgradeGift(UpgradeGiftRequest request) {
+        Boolean result = invoke("upgradeGift", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean transferGift(TransferGiftRequest request) {
+        Boolean result = invoke("transferGift", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
     }
 
     @Override
@@ -538,6 +624,79 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         }
     }
 
+    private Story postOrEditStoryMultipart(String methodName, PostStoryRequest request, JavaType resultType) {
+        try {
+            MultipartFormData multipart = new MultipartFormData()
+                .addField("business_connection_id", request.businessConnectionId())
+                .addField("active_period", String.valueOf(request.activePeriod()));
+            if (request.caption() != null) {
+                multipart.addField("caption", request.caption());
+            }
+            if (request.parseMode() != null) {
+                multipart.addField("parse_mode", request.parseMode());
+            }
+            if (request.captionEntities() != null) {
+                multipart.addField("caption_entities", objectMapper.writeValueAsString(request.captionEntities()));
+            }
+            if (request.areas() != null) {
+                multipart.addField("areas", objectMapper.writeValueAsString(request.areas()));
+            }
+            if (request.postToChatPage() != null) {
+                multipart.addField("post_to_chat_page", String.valueOf(request.postToChatPage()));
+            }
+            if (request.protectContent() != null) {
+                multipart.addField("protect_content", String.valueOf(request.protectContent()));
+            }
+            multipart.addField("content", objectMapper.writeValueAsString(toStoryContentPayload(request.content(), multipart)));
+            MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
+            return invokeMultipart(methodName, builtMultipart, resultType);
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while preparing multipart " + methodName + " request", null, e);
+        }
+    }
+
+    private Story postOrEditStoryMultipart(String methodName, EditStoryRequest request, JavaType resultType) {
+        try {
+            MultipartFormData multipart = new MultipartFormData()
+                .addField("business_connection_id", request.businessConnectionId())
+                .addField("story_id", String.valueOf(request.storyId()));
+            if (request.caption() != null) {
+                multipart.addField("caption", request.caption());
+            }
+            if (request.parseMode() != null) {
+                multipart.addField("parse_mode", request.parseMode());
+            }
+            if (request.captionEntities() != null) {
+                multipart.addField("caption_entities", objectMapper.writeValueAsString(request.captionEntities()));
+            }
+            if (request.areas() != null) {
+                multipart.addField("areas", objectMapper.writeValueAsString(request.areas()));
+            }
+            multipart.addField("content", objectMapper.writeValueAsString(toStoryContentPayload(request.content(), multipart)));
+            MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
+            return invokeMultipart(methodName, builtMultipart, resultType);
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while preparing multipart " + methodName + " request", null, e);
+        }
+    }
+
+    private StoryContentPayload toStoryContentPayload(InputStoryContent content, MultipartFormData multipart) {
+        InputFile media = content.media();
+        if (media instanceof InputFileReference reference) {
+            return new StoryContentPayload(content.type(), reference.value(), null, null, null);
+        }
+        String attachName = "storymedia";
+        try {
+            addInputFilePart(multipart, attachName, media, attachName);
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while preparing multipart story media part", null, e);
+        }
+        if (content instanceof ru.tardyon.botframework.telegram.api.model.story.InputStoryContentVideo video) {
+            return new StoryContentPayload(content.type(), "attach://" + attachName, video.duration(), video.coverFrameTimestamp(), video.isAnimation());
+        }
+        return new StoryContentPayload(content.type(), "attach://" + attachName, null, null, null);
+    }
+
     private SendMediaGroupItemPayload toMediaPayloadWithReference(InputMedia inputMedia) {
         return new SendMediaGroupItemPayload(
             inputMedia.type(),
@@ -736,6 +895,15 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     private record SendPaidMediaItemPayload(
         String type,
         String media
+    ) {
+    }
+
+    private record StoryContentPayload(
+        String type,
+        String media,
+        Double duration,
+        @JsonProperty("cover_frame_timestamp") Double coverFrameTimestamp,
+        @JsonProperty("is_animation") Boolean isAnimation
     ) {
     }
 

@@ -26,6 +26,7 @@ import ru.tardyon.botframework.telegram.api.model.WebhookInfo;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
 import ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts;
+import ru.tardyon.botframework.telegram.api.model.story.Story;
 import ru.tardyon.botframework.telegram.api.transport.TelegramApiResponse;
 import ru.tardyon.botframework.telegram.exception.TelegramApiException;
 
@@ -488,6 +489,70 @@ class DefaultTelegramApiClientParsingTest {
         assertEquals("gift-1", update.message().gift().gift().id());
         assertEquals("upgrade", update.message().uniqueGift().origin());
         assertTrue(Boolean.TRUE.equals(update.message().giftUpgradeSent().isUpgradeSeparate()));
+    }
+
+    @Test
+    void parseStoryResponse() {
+        String raw = """
+            {
+              "ok": true,
+              "result": {
+                "id": 55,
+                "chat": {
+                  "id": 123456789,
+                  "type": "private"
+                }
+              }
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructType(Story.class);
+        TelegramApiResponse<Story> response = DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        assertEquals(55, response.result().id());
+        assertEquals(123456789L, response.result().chat().id());
+    }
+
+    @Test
+    void parseMessageWithChecklistAndForwardedStory() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 1010,
+                  "message": {
+                    "message_id": 50,
+                    "date": 1710000010,
+                    "chat": { "id": 123456789, "type": "private" },
+                    "story": {
+                      "id": 11,
+                      "chat": { "id": 9, "type": "private" }
+                    },
+                    "checklist": {
+                      "title": "Daily",
+                      "tasks": [
+                        { "id": 1, "text": "Task 1" }
+                      ],
+                      "others_can_add_tasks": true
+                    }
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response = DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        Update update = response.result().getFirst();
+        assertNotNull(update.message().story());
+        assertEquals(11, update.message().story().id());
+        assertNotNull(update.message().checklist());
+        assertEquals("Daily", update.message().checklist().title());
+        assertEquals(1, update.message().checklist().tasks().size());
     }
 
     @Test

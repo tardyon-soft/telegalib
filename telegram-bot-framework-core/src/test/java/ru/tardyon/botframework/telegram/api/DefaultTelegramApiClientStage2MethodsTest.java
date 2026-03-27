@@ -28,20 +28,34 @@ import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
+import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.EditStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatGiftsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountStarBalanceRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetUserGiftsRequest;
+import ru.tardyon.botframework.telegram.api.method.PostStoryRequest;
+import ru.tardyon.botframework.telegram.api.method.RepostStoryRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
+import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.ConvertGiftToStarsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
+import ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSettingsRequest;
 import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
+import ru.tardyon.botframework.telegram.api.method.TransferBusinessAccountStarsRequest;
+import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
+import ru.tardyon.botframework.telegram.api.method.UpgradeGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
@@ -51,6 +65,8 @@ import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommandScopeDefault;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
+import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklist;
+import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklistTask;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResultArticle;
 import ru.tardyon.botframework.telegram.api.model.inline.InputTextMessageContent;
@@ -61,10 +77,13 @@ import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
 import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaPhoto;
 import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaVideo;
+import ru.tardyon.botframework.telegram.api.model.payment.AcceptedGiftTypes;
 import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
 import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
 import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
 import ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts;
+import ru.tardyon.botframework.telegram.api.model.story.InputStoryContentPhoto;
+import ru.tardyon.botframework.telegram.api.model.story.Story;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
@@ -515,6 +534,113 @@ class DefaultTelegramApiClientStage2MethodsTest {
         assertTrue(body.contains("\"invite_link\":\"https://t.me/+abc\""));
         assertTrue(body.contains("\"name\":\"Pro+\""));
         assertEquals("Pro+", result.name());
+    }
+
+    @Test
+    void postEditDeleteAndRepostStoryUseExpectedMethods() {
+        RecordingHttpClient storyClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"id":7,"chat":{"id":123,"type":"private"}}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", storyClient, objectMapper);
+
+        Story created = client.postStory(new PostStoryRequest("bc-1", InputStoryContentPhoto.of(InputFile.fileId("photo-id")), 86400, "s", null, null, null, true, true));
+        assertEquals(7, created.id());
+        assertEquals("/bottoken/postStory", storyClient.lastRequest().uri().getPath());
+        String postBody = new String(readBody(storyClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(postBody.contains("name=\"business_connection_id\""));
+        assertTrue(postBody.contains("name=\"content\""));
+
+        Story edited = client.editStory(new EditStoryRequest("bc-1", 7, InputStoryContentPhoto.of(InputFile.fileId("photo-id")), "updated", null, null, null));
+        assertEquals(7, edited.id());
+        assertEquals("/bottoken/editStory", storyClient.lastRequest().uri().getPath());
+
+        RecordingHttpClient repostClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"id":8,"chat":{"id":123,"type":"private"}}}
+                """
+        );
+        DefaultTelegramApiClient repostApi = new DefaultTelegramApiClient("token", "https://api.telegram.org", repostClient, objectMapper);
+        repostApi.repostStory(new RepostStoryRequest("bc-1", 123L, 7, 86400, null, null));
+        assertEquals("/bottoken/repostStory", repostClient.lastRequest().uri().getPath());
+
+        RecordingHttpClient deleteClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient deleteApi = new DefaultTelegramApiClient("token", "https://api.telegram.org", deleteClient, objectMapper);
+        boolean deleteResult = deleteApi.deleteStory(new DeleteStoryRequest("bc-1", 7));
+        assertTrue(deleteResult);
+        assertEquals("/bottoken/deleteStory", deleteClient.lastRequest().uri().getPath());
+    }
+
+    @Test
+    void sendAndEditChecklistUseExpectedMethods() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"message_id":201,"chat":{"id":123,"type":"private"},"date":1}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+        InputChecklist checklist = new InputChecklist("Daily", null, null, List.of(new InputChecklistTask(1, "Task", null, null)), true, true);
+
+        client.sendChecklist(new SendChecklistRequest("bc-1", 123L, checklist, true, true, null, null, null));
+        assertEquals("/bottoken/sendChecklist", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"business_connection_id\":\"bc-1\""));
+        assertTrue(body.contains("\"checklist\""));
+
+        client.editMessageChecklist(new EditMessageChecklistRequest("bc-1", 123L, 201, checklist, null));
+        assertEquals("/bottoken/editMessageChecklist", httpClient.lastRequest().uri().getPath());
+    }
+
+    @Test
+    void businessGiftAndStarsMethodsUseExpectedMethods() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":true}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        boolean settings = client.setBusinessAccountGiftSettings(
+            new SetBusinessAccountGiftSettingsRequest("bc-1", true, new AcceptedGiftTypes(true, true, true, true, true))
+        );
+        assertTrue(settings);
+        assertEquals("/bottoken/setBusinessAccountGiftSettings", httpClient.lastRequest().uri().getPath());
+
+        client.transferBusinessAccountStars(new TransferBusinessAccountStarsRequest("bc-1", 25));
+        assertEquals("/bottoken/transferBusinessAccountStars", httpClient.lastRequest().uri().getPath());
+
+        client.convertGiftToStars(new ConvertGiftToStarsRequest("bc-1", "owned-1"));
+        assertEquals("/bottoken/convertGiftToStars", httpClient.lastRequest().uri().getPath());
+
+        client.upgradeGift(new UpgradeGiftRequest("bc-1", "owned-1", true, 0));
+        assertEquals("/bottoken/upgradeGift", httpClient.lastRequest().uri().getPath());
+
+        client.transferGift(new TransferGiftRequest("bc-1", "owned-1", 777L, 5));
+        assertEquals("/bottoken/transferGift", httpClient.lastRequest().uri().getPath());
+    }
+
+    @Test
+    void getBusinessAccountStarBalanceAndGiftsParseResponse() {
+        RecordingHttpClient balanceClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"amount":321,"nanostar_amount":1}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", balanceClient, objectMapper);
+        StarAmount balance = client.getBusinessAccountStarBalance(new GetBusinessAccountStarBalanceRequest("bc-1"));
+        assertEquals(321, balance.amount());
+        assertEquals("/bottoken/getBusinessAccountStarBalance", balanceClient.lastRequest().uri().getPath());
+
+        RecordingHttpClient giftsClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"total_count":1,"gifts":[{"type":"regular","gift":{"id":"gift-1","star_count":15},"send_date":1710011111}]}}
+                """
+        );
+        DefaultTelegramApiClient giftsApi = new DefaultTelegramApiClient("token", "https://api.telegram.org", giftsClient, objectMapper);
+        OwnedGifts gifts = giftsApi.getBusinessAccountGifts(new GetBusinessAccountGiftsRequest("bc-1", null, null, null, null, null, null, null, null, null, 10));
+        assertEquals(1, gifts.gifts().size());
+        assertEquals("/bottoken/getBusinessAccountGifts", giftsClient.lastRequest().uri().getPath());
     }
 
     @Test
