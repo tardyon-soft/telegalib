@@ -3,7 +3,7 @@ package ru.tardyon.botframework.telegram.api.method;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record GetStarTransactionsRequest(
-    String offset,
+    Integer offset,
     @JsonProperty("limit") Integer limit
 ) {
 
@@ -13,4 +13,3 @@ public record GetStarTransactionsRequest(
         }
     }
 }
-

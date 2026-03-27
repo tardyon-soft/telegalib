@@ -362,20 +362,20 @@ class DefaultTelegramApiClientStage2MethodsTest {
     void getStarTransactionsUsesExpectedMethodAndPayload() {
         RecordingHttpClient httpClient = new RecordingHttpClient(
             """
-                {"ok":true,"result":{"transactions":[{"id":"tx-1","amount":{"amount":25},"date":1710011111,"source":{"type":"other"},"receiver":{"type":"telegram_ads"}}],"next_offset":"off-2"}}
+                {"ok":true,"result":{"transactions":[{"id":"tx-1","amount":{"amount":25},"date":1710011111,"source":{"type":"other"},"receiver":{"type":"telegram_ads"}}],"next_offset":2}}
                 """
         );
         DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
 
-        StarTransactions result = client.getStarTransactions(new GetStarTransactionsRequest("off-1", 50));
+        StarTransactions result = client.getStarTransactions(new GetStarTransactionsRequest(1, 50));
 
         assertEquals("/bottoken/getStarTransactions", httpClient.lastRequest().uri().getPath());
         String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
-        assertTrue(body.contains("\"offset\":\"off-1\""));
+        assertTrue(body.contains("\"offset\":1"));
         assertTrue(body.contains("\"limit\":50"));
         assertEquals(1, result.transactions().size());
         assertEquals("tx-1", result.transactions().getFirst().id());
-        assertEquals("off-2", result.nextOffset());
+        assertEquals(2, result.nextOffset());
     }
 
     @Test

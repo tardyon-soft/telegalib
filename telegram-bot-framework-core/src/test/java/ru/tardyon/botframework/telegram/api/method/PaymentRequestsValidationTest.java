@@ -127,7 +127,7 @@ class PaymentRequestsValidationTest {
     @Test
     void getStarTransactionsRequestValidatesLimit() {
         assertDoesNotThrow(() -> new GetStarTransactionsRequest(null, null));
-        assertDoesNotThrow(() -> new GetStarTransactionsRequest("next", 100));
+        assertDoesNotThrow(() -> new GetStarTransactionsRequest(10, 100));
 
         IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class,
