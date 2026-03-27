@@ -51,6 +51,7 @@ import ru.tardyon.botframework.telegram.api.model.webapp.WebAppInfo;
 import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramMessage;
 import ru.tardyon.botframework.telegram.dispatcher.UpdateContext;
+import ru.tardyon.botframework.telegram.exception.TelegramApiException;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.BotController;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnBusinessConnection;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnBusinessMessage;
@@ -296,10 +297,15 @@ public class Stage3DemoController {
         }
         int monthCount = parseMonthCount(System.getenv("DEMO_PREMIUM_MONTH_COUNT"));
         int starCount = monthCount == 3 ? 1000 : monthCount == 6 ? 1500 : 2500;
-        monetizationOperations.giftPremiumSubscription(
-            new GiftPremiumSubscriptionRequest(targetUserId, monthCount, starCount, "Demo premium gift", null, null)
-        );
-        telegramMessage.reply("Premium подарен: months=" + monthCount + ", stars=" + starCount + ".");
+        try {
+            monetizationOperations.giftPremiumSubscription(
+                new GiftPremiumSubscriptionRequest(targetUserId, monthCount, starCount, "Demo premium gift", null, null)
+            );
+            telegramMessage.reply("Premium подарен: months=" + monthCount + ", stars=" + starCount + ".");
+        } catch (TelegramApiException e) {
+            String description = StringUtils.hasText(e.getDescription()) ? e.getDescription() : e.getMessage();
+            telegramMessage.reply("Не удалось подарить Premium: " + description);
+        }
     }
 
     @OnMessage(command = "channel_subscription_init")
