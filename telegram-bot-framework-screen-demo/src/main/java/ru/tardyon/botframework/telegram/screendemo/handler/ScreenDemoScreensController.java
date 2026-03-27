@@ -9,6 +9,7 @@ import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.markup.InlineKeyboardMarkup;
 import ru.tardyon.botframework.telegram.api.model.markup.Keyboards;
 import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
+import ru.tardyon.botframework.telegram.exception.TelegramApiException;
 import ru.tardyon.botframework.telegram.screen.ScreenAction;
 import ru.tardyon.botframework.telegram.screen.ScreenCallbackData;
 import ru.tardyon.botframework.telegram.screen.ScreenContext;
@@ -206,8 +207,12 @@ public class ScreenDemoScreensController {
             return;
         }
 
-        apiClient.sendPhoto(SendPhotoRequest.of(chatId, InputFile.url(selected.imageUrl())));
-        context.screenState().putData(DETAILS_LAST_PHOTO_CHANNEL_ID, selected.id());
+        try {
+            apiClient.sendPhoto(SendPhotoRequest.of(chatId, InputFile.url(selected.imageUrl())));
+            context.screenState().putData(DETAILS_LAST_PHOTO_CHANNEL_ID, selected.id());
+        } catch (TelegramApiException ex) {
+            System.err.println("Screen image send failed for channel " + selected.id() + ": " + ex.getMessage());
+        }
     }
 
     private Long resolveChatId(ScreenContext context) {
