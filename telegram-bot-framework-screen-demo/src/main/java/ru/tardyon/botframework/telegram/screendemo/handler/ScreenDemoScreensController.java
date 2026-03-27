@@ -263,6 +263,12 @@ public class ScreenDemoScreensController {
         return widgetRegistry.handleCallback(callbackQuery.data(), context).orElse(ScreenAction.unhandled());
     }
 
+    @OnScreenCallback(screen = CATALOG_LIST_SCREEN, callbackEquals = "screen:nav:back")
+    public ScreenAction backFromCatalogList(TelegramCallbackQuery callback) {
+        callback.answer();
+        return ScreenAction.back();
+    }
+
     @OnScreenCallback(screen = CATALOG_DETAILS_SCREEN, callbackEquals = "screen:nav:back")
     public ScreenAction backFromCatalogDetails(TelegramCallbackQuery callback) {
         callback.answer();
