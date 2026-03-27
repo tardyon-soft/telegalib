@@ -20,10 +20,14 @@ import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
 import ru.tardyon.botframework.telegram.api.model.payment.Gift;
 import ru.tardyon.botframework.telegram.api.model.payment.GiftInfo;
+import ru.tardyon.botframework.telegram.api.model.payment.PaidMediaInfo;
+import ru.tardyon.botframework.telegram.api.model.payment.PaidMediaPhoto;
 import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
 import ru.tardyon.botframework.telegram.api.model.payment.RefundedPayment;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingAddress;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
+import ru.tardyon.botframework.telegram.api.model.payment.UniqueGift;
+import ru.tardyon.botframework.telegram.api.model.payment.UniqueGiftInfo;
 import ru.tardyon.botframework.telegram.api.model.webapp.WebAppData;
 import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramMessage;
@@ -62,6 +66,8 @@ class TelegramAnnotationHandlerRegistrarTest {
                 router.route(new UpdateContext(updateWithDeletedBusinessMessages(), apiClient));
                 router.route(new UpdateContext(updateWithWebAppDataMessage(), apiClient));
                 router.route(new UpdateContext(updateWithGiftServiceMessage(), apiClient));
+                router.route(new UpdateContext(updateWithPaidMediaServiceMessage(), apiClient));
+                router.route(new UpdateContext(updateWithUniqueGiftServiceMessage(), apiClient));
                 router.route(new UpdateContext(updateWithBusinessRefundedPaymentMessage(), apiClient));
 
                 UpdateContext stateful = new UpdateContext(updateWithMessage("name:John"), apiClient);
@@ -81,6 +87,8 @@ class TelegramAnnotationHandlerRegistrarTest {
                 assertThat(controller.deletedBusinessMessagesCalls.get()).isEqualTo(1);
                 assertThat(controller.webAppDataCalls.get()).isEqualTo(1);
                 assertThat(controller.giftServiceCalls.get()).isEqualTo(1);
+                assertThat(controller.paidMediaServiceCalls.get()).isEqualTo(1);
+                assertThat(controller.uniqueGiftServiceCalls.get()).isEqualTo(1);
                 assertThat(controller.businessRefundCalls.get()).isEqualTo(1);
                 assertThat(controller.lastMessageWrapper).isNotNull();
                 assertThat(controller.lastCallbackWrapper).isNotNull();
@@ -300,6 +308,87 @@ class TelegramAnnotationHandlerRegistrarTest {
         return new Update(13L, null, null, null, null, null, null, null, null, message, null, null, null, null);
     }
 
+    private static Update updateWithPaidMediaServiceMessage() {
+        PaidMediaInfo paidMediaInfo = new PaidMediaInfo(
+            5,
+            java.util.List.of(new PaidMediaPhoto("photo", java.util.List.of(new ru.tardyon.botframework.telegram.api.model.PhotoSize("f1", "u1", 10, 10, 1L))))
+        );
+        Message message = new Message(
+            null,
+            16,
+            new User(100L, false, "John", null, "john", "en", null, null, null),
+            null,
+            new Chat(200L, "private", null, null, "John", null, null),
+            1_710_000_007,
+            null,
+            null,
+            null,
+            null,
+            null,
+            paidMediaInfo,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+        return new Update(14L, message, null, null, null, null, null, null);
+    }
+
+    private static Update updateWithUniqueGiftServiceMessage() {
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        UniqueGiftInfo uniqueGiftInfo = new UniqueGiftInfo(
+            new UniqueGift(
+                "gift-1",
+                "Flower",
+                "Flower #1",
+                1,
+                mapper.createObjectNode().put("k", "v"),
+                mapper.createObjectNode().put("k", "v"),
+                mapper.createObjectNode().put("k", "v"),
+                null,
+                null,
+                null,
+                mapper.createObjectNode().put("k", "v"),
+                null
+            ),
+            "upgrade",
+            null,
+            null,
+            null,
+            null,
+            null
+        );
+        Message message = new Message(
+            null,
+            17,
+            new User(100L, false, "John", null, "john", "en", null, null, null),
+            null,
+            new Chat(200L, "private", null, null, "John", null, null),
+            1_710_000_008,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            uniqueGiftInfo,
+            null,
+            null,
+            null,
+            null
+        );
+        return new Update(15L, message, null, null, null, null, null, null);
+    }
+
     @Configuration(proxyBeanMethods = false)
     static class AnnotatedControllerConfiguration {
         @Bean
@@ -331,6 +420,8 @@ class TelegramAnnotationHandlerRegistrarTest {
         private final AtomicInteger deletedBusinessMessagesCalls = new AtomicInteger();
         private final AtomicInteger webAppDataCalls = new AtomicInteger();
         private final AtomicInteger giftServiceCalls = new AtomicInteger();
+        private final AtomicInteger paidMediaServiceCalls = new AtomicInteger();
+        private final AtomicInteger uniqueGiftServiceCalls = new AtomicInteger();
         private final AtomicInteger businessRefundCalls = new AtomicInteger();
 
         private TelegramMessage lastMessageWrapper;
@@ -420,6 +511,20 @@ class TelegramAnnotationHandlerRegistrarTest {
             giftServiceCalls.incrementAndGet();
             assertThat(giftInfo).isNotNull();
             assertThat(giftInfo.gift().id()).isEqualTo("gift-1");
+        }
+
+        @OnMessage(paidMediaPresent = true)
+        public void onPaidMediaServiceMessage(PaidMediaInfo paidMediaInfo) {
+            paidMediaServiceCalls.incrementAndGet();
+            assertThat(paidMediaInfo).isNotNull();
+            assertThat(paidMediaInfo.starCount()).isEqualTo(5);
+        }
+
+        @OnMessage(uniqueGiftPresent = true)
+        public void onUniqueGiftServiceMessage(UniqueGiftInfo uniqueGiftInfo) {
+            uniqueGiftServiceCalls.incrementAndGet();
+            assertThat(uniqueGiftInfo).isNotNull();
+            assertThat(uniqueGiftInfo.gift().giftId()).isEqualTo("gift-1");
         }
 
         @OnBusinessMessage(refundedPaymentPresent = true)
