@@ -11,6 +11,7 @@ public class TelegramBotFrameworkProperties {
     private Mode mode = Mode.POLLING;
     private final Polling polling = new Polling();
     private final Webhook webhook = new Webhook();
+    private final WebApp webApp = new WebApp();
 
     public enum Mode {
         POLLING,
@@ -39,6 +40,10 @@ public class TelegramBotFrameworkProperties {
 
     public Webhook getWebhook() {
         return webhook;
+    }
+
+    public WebApp getWebApp() {
+        return webApp;
     }
 
     public boolean isWebhookMode() {
@@ -158,6 +163,19 @@ public class TelegramBotFrameworkProperties {
 
         public void setDropPendingUpdates(Boolean dropPendingUpdates) {
             this.dropPendingUpdates = dropPendingUpdates;
+        }
+    }
+
+    public static class WebApp {
+
+        private Long initDataMaxAgeSeconds;
+
+        public Long getInitDataMaxAgeSeconds() {
+            return initDataMaxAgeSeconds;
+        }
+
+        public void setInitDataMaxAgeSeconds(Long initDataMaxAgeSeconds) {
+            this.initDataMaxAgeSeconds = initDataMaxAgeSeconds;
         }
     }
 }

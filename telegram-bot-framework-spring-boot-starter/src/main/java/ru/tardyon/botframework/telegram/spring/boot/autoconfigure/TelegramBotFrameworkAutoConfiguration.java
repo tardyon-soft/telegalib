@@ -29,6 +29,7 @@ import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookContr
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
 import ru.tardyon.botframework.telegram.webhook.DefaultWebhookUpdateProcessor;
 import ru.tardyon.botframework.telegram.webhook.WebhookUpdateProcessor;
+import ru.tardyon.botframework.telegram.webapp.WebAppInitDataValidator;
 
 @AutoConfiguration
 @EnableConfigurationProperties(TelegramBotFrameworkProperties.class)
@@ -57,6 +58,12 @@ public class TelegramBotFrameworkAutoConfiguration {
             throw new IllegalStateException("telegram.bot.token must be configured");
         }
         return new DefaultTelegramApiClient(properties.getToken(), telegramHttpClient, telegramObjectMapper);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
+    public WebAppInitDataValidator webAppInitDataValidator() {
+        return new WebAppInitDataValidator();
     }
 
     @Bean

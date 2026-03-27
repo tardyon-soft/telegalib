@@ -20,6 +20,7 @@ import ru.tardyon.botframework.telegram.spring.boot.lifecycle.TelegramBotLifecyc
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
 import ru.tardyon.botframework.telegram.webhook.WebhookUpdateProcessor;
+import ru.tardyon.botframework.telegram.webapp.WebAppInitDataValidator;
 
 class TelegramBotFrameworkAutoConfigurationTest {
 
@@ -47,6 +48,7 @@ class TelegramBotFrameworkAutoConfigurationTest {
                 assertThat(context).hasSingleBean(TelegramBot.class);
                 assertThat(context).hasSingleBean(TelegramBotLifecycle.class);
                 assertThat(context).hasSingleBean(WebhookUpdateProcessor.class);
+                assertThat(context).hasSingleBean(WebAppInitDataValidator.class);
             });
     }
 

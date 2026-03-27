@@ -9,15 +9,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface OnMessage {
+public @interface OnShippingQuery {
 
-    String command() default "";
-
-    String textEquals() default "";
-
-    String textStartsWith() default "";
-
-    boolean webAppDataPresent() default false;
+    String invoicePayloadEquals() default "";
 
     String state() default "";
 }

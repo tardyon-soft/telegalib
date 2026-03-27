@@ -9,15 +9,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface OnMessage {
-
-    String command() default "";
-
-    String textEquals() default "";
-
-    String textStartsWith() default "";
-
-    boolean webAppDataPresent() default false;
+public @interface OnBusinessConnection {
 
     String state() default "";
 }

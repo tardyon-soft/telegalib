@@ -9,15 +9,9 @@ import java.lang.annotation.Target;
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-public @interface OnMessage {
+public @interface OnPreCheckoutQuery {
 
-    String command() default "";
-
-    String textEquals() default "";
-
-    String textStartsWith() default "";
-
-    boolean webAppDataPresent() default false;
+    String payloadEquals() default "";
 
     String state() default "";
 }
