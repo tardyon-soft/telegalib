@@ -32,6 +32,9 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.EditStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatAdministratorsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatMemberCountRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountStarBalanceRequest;
@@ -73,6 +76,7 @@ import ru.tardyon.botframework.telegram.api.model.inline.InputTextMessageContent
 import ru.tardyon.botframework.telegram.api.model.markup.Keyboards;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButtons;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMember;
 import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
 import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMediaPhoto;
@@ -778,6 +782,63 @@ class DefaultTelegramApiClientStage2MethodsTest {
 
         assertEquals("/bottoken/getChatMenuButton", httpClient.lastRequest().uri().getPath());
         assertTrue(result instanceof ru.tardyon.botframework.telegram.api.model.menu.MenuButtonWebApp);
+    }
+
+    @Test
+    void getChatMemberUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"status":"member","user":{"id":42,"is_bot":false,"first_name":"U"}}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        ChatMember result = client.getChatMember(new GetChatMemberRequest("@demo_channel", 42L));
+
+        assertEquals("/bottoken/getChatMember", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":\"@demo_channel\""));
+        assertTrue(body.contains("\"user_id\":42"));
+        assertEquals("member", result.status());
+    }
+
+    @Test
+    void getChatAdministratorsUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":[
+                  {"status":"creator","is_anonymous":false,"user":{"id":1,"is_bot":false,"first_name":"Owner"}},
+                  {"status":"administrator","can_be_edited":true,"is_anonymous":false,"user":{"id":2,"is_bot":false,"first_name":"Admin"}}
+                ]}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        List<ChatMember> result = client.getChatAdministrators(new GetChatAdministratorsRequest(-1001234567890L));
+
+        assertEquals("/bottoken/getChatAdministrators", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":-1001234567890"));
+        assertEquals(2, result.size());
+        assertEquals("creator", result.get(0).status());
+        assertEquals("administrator", result.get(1).status());
+    }
+
+    @Test
+    void getChatMemberCountUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":1337}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        int result = client.getChatMemberCount(new GetChatMemberCountRequest("@demo_channel"));
+
+        assertEquals("/bottoken/getChatMemberCount", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":\"@demo_channel\""));
+        assertEquals(1337, result);
     }
 
     private static String okTrueResponse() {

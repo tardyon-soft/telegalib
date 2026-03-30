@@ -31,6 +31,9 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest
 import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatAdministratorsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatMemberCountRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountStarBalanceRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
@@ -84,6 +87,7 @@ import ru.tardyon.botframework.telegram.api.model.MessageEntity;
 import ru.tardyon.botframework.telegram.api.model.markup.ReplyMarkup;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMember;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.media.InputMedia;
 import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMedia;
@@ -437,6 +441,23 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     public MenuButton getChatMenuButton(GetChatMenuButtonRequest request) {
         GetChatMenuButtonRequest actualRequest = request == null ? new GetChatMenuButtonRequest(null) : request;
         return invoke("getChatMenuButton", actualRequest, objectMapper.getTypeFactory().constructType(MenuButton.class));
+    }
+
+    @Override
+    public ChatMember getChatMember(GetChatMemberRequest request) {
+        return invoke("getChatMember", requireRequest(request), objectMapper.getTypeFactory().constructType(ChatMember.class));
+    }
+
+    @Override
+    public List<ChatMember> getChatAdministrators(GetChatAdministratorsRequest request) {
+        JavaType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, ChatMember.class);
+        return invoke("getChatAdministrators", requireRequest(request), listType);
+    }
+
+    @Override
+    public int getChatMemberCount(GetChatMemberCountRequest request) {
+        Integer result = invoke("getChatMemberCount", requireRequest(request), objectMapper.getTypeFactory().constructType(Integer.class));
+        return result == null ? 0 : result;
     }
 
     @Override

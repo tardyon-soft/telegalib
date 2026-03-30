@@ -10,6 +10,10 @@ Spring Boot demo for `telegram-bot-framework-spring-boot-starter` with Stage 6 t
   - `/gift_test` -> `sendGift`
   - `/premium_gift_test` -> `giftPremiumSubscription`
   - `/channel_subscription_init` -> `createChatSubscriptionInviteLink`
+- Channel membership/admin checks:
+  - `/channel_member_check <chat_id> [user_id]` -> `getChatMember`
+  - `/channel_admins <chat_id>` -> `getChatAdministrators` + `getChatMemberCount`
+  - `/bot_channel_admin_check <chat_id>` -> `getMe` + `getChatMember`
 - Stage 5 business commands:
   - `/business_story_test` -> `postStory`
   - `/business_checklist_test` -> `sendChecklist`
@@ -83,6 +87,9 @@ Optional for Stage 5 demos:
 - `DEMO_CHANNEL_SUB_PRICE`
 - `DEMO_BUSINESS_CONNECTION_ID`
 - `DEMO_BUSINESS_STORY_FILE_ID`
+
+For channel membership/admin commands:
+- `DEMO_CHANNEL_CHAT_ID` can be used as default `chat_id` if command args are omitted.
 
 Optional for `/albumtest`:
 

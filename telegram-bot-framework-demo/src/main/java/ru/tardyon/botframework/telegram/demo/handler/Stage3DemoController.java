@@ -11,6 +11,9 @@ import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatAdministratorsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatMemberCountRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
@@ -29,6 +32,7 @@ import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMember;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResultArticle;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResultPhoto;
@@ -116,6 +120,9 @@ public class Stage3DemoController {
                 "/gift_test - sendGift\n" +
                 "/premium_gift_test - giftPremiumSubscription\n" +
                 "/channel_subscription_init - create subscription link\n" +
+                "/channel_member_check - check member status\n" +
+                "/channel_admins - list channel admins\n" +
+                "/bot_channel_admin_check - is bot admin/owner\n" +
                 "/business_story_test - postStory\n" +
                 "/business_checklist_test - sendChecklist\n" +
                 "/business_gifts_test - getBusinessAccountGifts\n" +
@@ -135,13 +142,84 @@ public class Stage3DemoController {
                     new BotCommand("webapp", "Send web app keyboard"),
                     new BotCommand("prepared_inline_test", "Create prepared inline message"),
                     new BotCommand("albumtest", "Send media group album"),
-                    new BotCommand("menubutton_init", "Configure chat menu button")
+                    new BotCommand("menubutton_init", "Configure chat menu button"),
+                    new BotCommand("channel_member_check", "Check chat member status"),
+                    new BotCommand("channel_admins", "List chat admins"),
+                    new BotCommand("bot_channel_admin_check", "Check bot admin status")
                 ),
                 null,
                 null
             )
         );
         telegramMessage.reply("Команды зарегистрированы.");
+    }
+
+    @OnMessage(command = "channel_member_check")
+    public void onChannelMemberCheck(Message message, TelegramMessage telegramMessage) {
+        String[] args = commandArgs(message.text(), "channel_member_check");
+        String chatIdRaw = args.length > 0 ? args[0] : System.getenv("DEMO_CHANNEL_CHAT_ID");
+        if (!StringUtils.hasText(chatIdRaw)) {
+            telegramMessage.reply("Использование: /channel_member_check <chat_id_or_@username> [user_id].");
+            return;
+        }
+        long userId = args.length > 1 ? parseLongOrFallback(args[1], -1L) : (message.from() != null ? message.from().id() : -1L);
+        if (userId <= 0) {
+            telegramMessage.reply("Не удалось определить user_id. Укажи вторым аргументом.");
+            return;
+        }
+
+        Object chatId = parseChatId(chatIdRaw);
+        ChatMember member = telegramApiClient.getChatMember(new GetChatMemberRequest(chatId, userId));
+        boolean subscribed = isSubscribed(member);
+        boolean adminOrOwner = isAdminOrOwner(member);
+        telegramMessage.reply(
+            "chat_id=" + chatIdRaw + "\n" +
+                "user_id=" + userId + "\n" +
+                "status=" + member.status() + "\n" +
+                "is_subscribed=" + subscribed + "\n" +
+                "is_admin_or_owner=" + adminOrOwner
+        );
+    }
+
+    @OnMessage(command = "channel_admins")
+    public void onChannelAdmins(Message message, TelegramMessage telegramMessage) {
+        String[] args = commandArgs(message.text(), "channel_admins");
+        String chatIdRaw = args.length > 0 ? args[0] : System.getenv("DEMO_CHANNEL_CHAT_ID");
+        if (!StringUtils.hasText(chatIdRaw)) {
+            telegramMessage.reply("Использование: /channel_admins <chat_id_or_@username>.");
+            return;
+        }
+        Object chatId = parseChatId(chatIdRaw);
+        List<ChatMember> admins = telegramApiClient.getChatAdministrators(new GetChatAdministratorsRequest(chatId));
+        int memberCount = telegramApiClient.getChatMemberCount(new GetChatMemberCountRequest(chatId));
+        String adminsText = admins.stream()
+            .map(m -> m.user() == null ? "unknown" : m.user().id() + " (" + m.status() + ")")
+            .reduce((a, b) -> a + ", " + b)
+            .orElse("<empty>");
+        telegramMessage.reply(
+            "chat_id=" + chatIdRaw + "\n" +
+                "member_count=" + memberCount + "\n" +
+                "admins=" + adminsText
+        );
+    }
+
+    @OnMessage(command = "bot_channel_admin_check")
+    public void onBotChannelAdminCheck(Message message, TelegramMessage telegramMessage) {
+        String[] args = commandArgs(message.text(), "bot_channel_admin_check");
+        String chatIdRaw = args.length > 0 ? args[0] : System.getenv("DEMO_CHANNEL_CHAT_ID");
+        if (!StringUtils.hasText(chatIdRaw)) {
+            telegramMessage.reply("Использование: /bot_channel_admin_check <chat_id_or_@username>.");
+            return;
+        }
+        Object chatId = parseChatId(chatIdRaw);
+        long botId = telegramApiClient.getMe().id();
+        ChatMember botMember = telegramApiClient.getChatMember(new GetChatMemberRequest(chatId, botId));
+        telegramMessage.reply(
+            "chat_id=" + chatIdRaw + "\n" +
+                "bot_id=" + botId + "\n" +
+                "bot_status=" + botMember.status() + "\n" +
+                "bot_is_admin_or_owner=" + isAdminOrOwner(botMember)
+        );
     }
 
     @OnMessage(command = "buy_test")
@@ -673,5 +751,56 @@ public class Stage3DemoController {
         } catch (NumberFormatException ignored) {
         }
         return 3;
+    }
+
+    private static boolean isSubscribed(ChatMember member) {
+        if (member == null || member.status() == null) {
+            return false;
+        }
+        return switch (member.status()) {
+            case "creator", "administrator", "member" -> true;
+            case "restricted" -> member instanceof ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberRestricted restricted
+                && Boolean.TRUE.equals(restricted.isMember());
+            default -> false;
+        };
+    }
+
+    private static boolean isAdminOrOwner(ChatMember member) {
+        if (member == null || member.status() == null) {
+            return false;
+        }
+        return "creator".equals(member.status()) || "administrator".equals(member.status());
+    }
+
+    private static long parseLongOrFallback(String value, long fallback) {
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private static String[] commandArgs(String text, String command) {
+        if (!StringUtils.hasText(text)) {
+            return new String[0];
+        }
+        String normalized = text.trim();
+        String slash = "/" + command;
+        if (!normalized.startsWith(slash)) {
+            return new String[0];
+        }
+        String firstToken = normalized.split("\\s+", 2)[0];
+        if (!(firstToken.equals(slash) || firstToken.startsWith(slash + "@"))) {
+            return new String[0];
+        }
+        int firstSpace = normalized.indexOf(' ');
+        if (firstSpace < 0 || firstSpace == normalized.length() - 1) {
+            return new String[0];
+        }
+        String argsChunk = normalized.substring(firstSpace + 1).trim();
+        if (argsChunk.isEmpty()) {
+            return new String[0];
+        }
+        return argsChunk.split("\\s+");
     }
 }

@@ -12,6 +12,9 @@ import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatAdministratorsRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatMemberCountRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessConnectionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountStarBalanceRequest;
@@ -59,6 +62,7 @@ import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.User;
 import ru.tardyon.botframework.telegram.api.model.WebhookInfo;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMember;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
@@ -163,6 +167,18 @@ public interface TelegramApiClient {
     boolean setChatMenuButton(SetChatMenuButtonRequest request);
 
     MenuButton getChatMenuButton(GetChatMenuButtonRequest request);
+
+    default ChatMember getChatMember(GetChatMemberRequest request) {
+        throw new UnsupportedOperationException("getChatMember is not implemented by this TelegramApiClient");
+    }
+
+    default List<ChatMember> getChatAdministrators(GetChatAdministratorsRequest request) {
+        throw new UnsupportedOperationException("getChatAdministrators is not implemented by this TelegramApiClient");
+    }
+
+    default int getChatMemberCount(GetChatMemberCountRequest request) {
+        throw new UnsupportedOperationException("getChatMemberCount is not implemented by this TelegramApiClient");
+    }
 
     TelegramFile getFile(GetFileRequest request);
 

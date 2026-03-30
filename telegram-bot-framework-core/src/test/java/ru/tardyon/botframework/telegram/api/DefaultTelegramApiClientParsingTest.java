@@ -24,6 +24,7 @@ import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.User;
 import ru.tardyon.botframework.telegram.api.model.WebhookInfo;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMember;
 import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
 import ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts;
 import ru.tardyon.botframework.telegram.api.model.story.Story;
@@ -290,6 +291,33 @@ class DefaultTelegramApiClientParsingTest {
         assertEquals("pcq-1", update.preCheckoutQuery().id());
         assertEquals("XTR", update.preCheckoutQuery().currency());
         assertEquals("stars:pro", update.preCheckoutQuery().invoicePayload());
+    }
+
+    @Test
+    void parseGetChatMemberResponseWithAdministrator() {
+        String raw = """
+            {
+              "ok": true,
+              "result": {
+                "status": "administrator",
+                "can_be_edited": true,
+                "is_anonymous": false,
+                "user": {
+                  "id": 777,
+                  "is_bot": false,
+                  "first_name": "Alex"
+                }
+              }
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructType(ChatMember.class);
+        TelegramApiResponse<ChatMember> response = DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        assertNotNull(response.result());
+        assertEquals("administrator", response.result().status());
+        assertEquals(777L, response.result().user().id());
     }
 
     @Test
