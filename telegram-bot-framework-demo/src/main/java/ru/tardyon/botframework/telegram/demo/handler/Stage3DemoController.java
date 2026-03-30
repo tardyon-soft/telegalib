@@ -33,6 +33,7 @@ import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMember;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberChecks;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResultArticle;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResultPhoto;
@@ -170,8 +171,8 @@ public class Stage3DemoController {
 
         Object chatId = parseChatId(chatIdRaw);
         ChatMember member = telegramApiClient.getChatMember(new GetChatMemberRequest(chatId, userId));
-        boolean subscribed = isSubscribed(member);
-        boolean adminOrOwner = isAdminOrOwner(member);
+        boolean subscribed = ChatMemberChecks.isSubscribed(member);
+        boolean adminOrOwner = ChatMemberChecks.isAdminOrOwner(member);
         telegramMessage.reply(
             "chat_id=" + chatIdRaw + "\n" +
                 "user_id=" + userId + "\n" +
@@ -218,7 +219,7 @@ public class Stage3DemoController {
             "chat_id=" + chatIdRaw + "\n" +
                 "bot_id=" + botId + "\n" +
                 "bot_status=" + botMember.status() + "\n" +
-                "bot_is_admin_or_owner=" + isAdminOrOwner(botMember)
+                "bot_is_admin_or_owner=" + ChatMemberChecks.isAdminOrOwner(botMember)
         );
     }
 
@@ -751,25 +752,6 @@ public class Stage3DemoController {
         } catch (NumberFormatException ignored) {
         }
         return 3;
-    }
-
-    private static boolean isSubscribed(ChatMember member) {
-        if (member == null || member.status() == null) {
-            return false;
-        }
-        return switch (member.status()) {
-            case "creator", "administrator", "member" -> true;
-            case "restricted" -> member instanceof ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberRestricted restricted
-                && Boolean.TRUE.equals(restricted.isMember());
-            default -> false;
-        };
-    }
-
-    private static boolean isAdminOrOwner(ChatMember member) {
-        if (member == null || member.status() == null) {
-            return false;
-        }
-        return "creator".equals(member.status()) || "administrator".equals(member.status());
     }
 
     private static long parseLongOrFallback(String value, long fallback) {
