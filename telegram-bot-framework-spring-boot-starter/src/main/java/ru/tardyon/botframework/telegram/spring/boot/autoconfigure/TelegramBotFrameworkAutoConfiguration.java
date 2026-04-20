@@ -13,6 +13,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StringUtils;
 import ru.tardyon.botframework.telegram.api.DefaultTelegramApiClient;
 import ru.tardyon.botframework.telegram.api.TelegramApiClient;
@@ -46,6 +47,7 @@ import ru.tardyon.botframework.telegram.spring.boot.lifecycle.TelegramBotLifecyc
 import ru.tardyon.botframework.telegram.spring.boot.properties.TelegramBotFrameworkProperties;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramBusinessOperations;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramMonetizationOperations;
+import ru.tardyon.botframework.telegram.spring.boot.state.RedisStateStorage;
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramScreenAnnotationRegistrar;
@@ -143,8 +145,32 @@ public class TelegramBotFrameworkAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    @ConditionalOnProperty(
+        prefix = "telegram.bot.state",
+        name = "storage",
+        havingValue = "memory",
+        matchIfMissing = true
+    )
     public StateStorage telegramStateStorage() {
         return new InMemoryStateStorage();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(StateStorage.class)
+    @ConditionalOnClass(StringRedisTemplate.class)
+    @ConditionalOnProperty(prefix = "telegram.bot.state", name = "storage", havingValue = "redis")
+    public StateStorage redisTelegramStateStorage(
+        StringRedisTemplate stringRedisTemplate,
+        ObjectMapper telegramObjectMapper,
+        TelegramBotFrameworkProperties properties
+    ) {
+        TelegramBotFrameworkProperties.Redis redis = properties.getState().getRedis();
+        return new RedisStateStorage(
+            stringRedisTemplate,
+            telegramObjectMapper,
+            redis.getKeyPrefix(),
+            redis.getTtlSeconds()
+        );
     }
 
     @Bean

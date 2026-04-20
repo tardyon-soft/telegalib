@@ -61,6 +61,39 @@ telegram:
       local-file-uri-upload-enabled: true
 ```
 
+## FSM state storage (memory/redis)
+
+Default is in-memory:
+
+```yaml
+telegram:
+  bot:
+    state:
+      storage: memory
+```
+
+Redis storage via `application.yml`:
+
+```yaml
+telegram:
+  bot:
+    state:
+      storage: redis
+      redis:
+        key-prefix: telegram:fsm
+        ttl-seconds: 86400
+```
+
+Standard Spring Redis settings are used for connection:
+
+```yaml
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+```
+
 ## Webhook mode (`application.yml`)
 
 ```yaml

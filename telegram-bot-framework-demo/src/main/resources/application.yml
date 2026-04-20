@@ -8,6 +8,12 @@ telegram:
       local-file-uri-upload-enabled: true
     diagnostics:
       enabled: true
+    state:
+      storage: memory
+      # storage: redis
+      # redis:
+      #   key-prefix: telegram:fsm
+      #   ttl-seconds: 86400
     polling:
       enabled: true
       timeout: 30

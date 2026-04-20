@@ -16,10 +16,16 @@ public class TelegramBotFrameworkProperties {
     private final WebApp webApp = new WebApp();
     private final Transport transport = new Transport();
     private final Diagnostics diagnostics = new Diagnostics();
+    private final StateSettings state = new StateSettings();
 
     public enum Mode {
         POLLING,
         WEBHOOK
+    }
+
+    public enum StateStorageType {
+        MEMORY,
+        REDIS
     }
 
     public String getToken() {
@@ -56,6 +62,10 @@ public class TelegramBotFrameworkProperties {
 
     public Diagnostics getDiagnostics() {
         return diagnostics;
+    }
+
+    public StateSettings getState() {
+        return state;
     }
 
     public boolean isWebhookMode() {
@@ -242,6 +252,46 @@ public class TelegramBotFrameworkProperties {
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+    }
+
+    public static class StateSettings {
+
+        private StateStorageType storage = StateStorageType.MEMORY;
+        private final Redis redis = new Redis();
+
+        public StateStorageType getStorage() {
+            return storage;
+        }
+
+        public void setStorage(StateStorageType storage) {
+            this.storage = storage;
+        }
+
+        public Redis getRedis() {
+            return redis;
+        }
+    }
+
+    public static class Redis {
+
+        private String keyPrefix = "telegram:fsm";
+        private Long ttlSeconds;
+
+        public String getKeyPrefix() {
+            return keyPrefix;
+        }
+
+        public void setKeyPrefix(String keyPrefix) {
+            this.keyPrefix = keyPrefix;
+        }
+
+        public Long getTtlSeconds() {
+            return ttlSeconds;
+        }
+
+        public void setTtlSeconds(Long ttlSeconds) {
+            this.ttlSeconds = ttlSeconds;
         }
     }
 }

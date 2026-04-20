@@ -3,11 +3,13 @@ package ru.tardyon.botframework.telegram.spring.boot.autoconfigure;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import ru.tardyon.botframework.telegram.api.capability.BotApiCapabilities;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile;
@@ -24,11 +26,14 @@ import ru.tardyon.botframework.telegram.polling.LongPollingRunner;
 import ru.tardyon.botframework.telegram.screen.ScreenEngine;
 import ru.tardyon.botframework.telegram.screen.ScreenRegistry;
 import ru.tardyon.botframework.telegram.screen.ScreenStateStorage;
+import ru.tardyon.botframework.telegram.fsm.InMemoryStateStorage;
+import ru.tardyon.botframework.telegram.fsm.StateStorage;
 import ru.tardyon.botframework.telegram.spring.boot.lifecycle.TelegramBotLifecycle;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramScreenAnnotationRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramBusinessOperations;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramMonetizationOperations;
+import ru.tardyon.botframework.telegram.spring.boot.state.RedisStateStorage;
 import ru.tardyon.botframework.telegram.spring.boot.widget.AnnotatedWidgetRegistry;
 import ru.tardyon.botframework.telegram.spring.boot.widget.TelegramWidgetAnnotationRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
@@ -73,6 +78,26 @@ class TelegramBotFrameworkAutoConfigurationTest {
                 assertThat(context).hasSingleBean(BotApiTransportProfile.class);
                 assertThat(context).hasSingleBean(DiagnosticsHooks.class);
                 assertThat(context).hasSingleBean(BotApiCapabilities.class);
+                assertThat(context).hasSingleBean(StateStorage.class);
+                assertThat(context.getBean(StateStorage.class)).isInstanceOf(InMemoryStateStorage.class);
+            });
+    }
+
+    @Test
+    void createsRedisStateStorageWhenConfigured() {
+        contextRunner
+            .withUserConfiguration(RedisTemplateConfiguration.class)
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false",
+                "telegram.bot.state.storage=redis",
+                "telegram.bot.state.redis.key-prefix=test:fsm",
+                "telegram.bot.state.redis.ttl-seconds=1800"
+            )
+            .run(context -> {
+                assertThat(context).hasSingleBean(StateStorage.class);
+                assertThat(context.getBean(StateStorage.class)).isInstanceOf(RedisStateStorage.class);
             });
     }
 
@@ -221,6 +246,14 @@ class TelegramBotFrameworkAutoConfigurationTest {
         BotApiRequestListener testRequestListener() {
             return event -> {
             };
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class RedisTemplateConfiguration {
+        @Bean
+        StringRedisTemplate stringRedisTemplate() {
+            return Mockito.mock(StringRedisTemplate.class);
         }
     }
 

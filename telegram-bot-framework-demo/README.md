@@ -107,6 +107,24 @@ export BOT_TOKEN=123456:ABCDEF
 ./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling,cloud'
 ```
 
+## Use Redis for FSM user state
+
+```yaml
+telegram:
+  bot:
+    state:
+      storage: redis
+      redis:
+        key-prefix: telegram:fsm
+        ttl-seconds: 86400
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+```
+
 ## Run demo (polling + local Bot API)
 
 ```bash

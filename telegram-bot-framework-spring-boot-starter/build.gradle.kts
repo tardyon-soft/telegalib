@@ -7,6 +7,7 @@ dependencies {
 
     implementation("org.springframework.boot:spring-boot-starter:3.3.5")
     implementation("org.springframework.boot:spring-boot-autoconfigure:3.3.5")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis:3.3.5")
     implementation("org.springframework:spring-web:6.1.13")
 
     compileOnly("org.springframework.boot:spring-boot-configuration-processor:3.3.5")
