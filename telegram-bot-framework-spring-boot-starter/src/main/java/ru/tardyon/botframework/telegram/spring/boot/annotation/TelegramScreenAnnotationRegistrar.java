@@ -26,6 +26,7 @@ import ru.tardyon.botframework.telegram.dispatcher.filter.Filter;
 import ru.tardyon.botframework.telegram.dispatcher.filter.Filters;
 import ru.tardyon.botframework.telegram.fsm.StateContext;
 import ru.tardyon.botframework.telegram.screen.ScreenAction;
+import ru.tardyon.botframework.telegram.screen.ScreenCallbackData;
 import ru.tardyon.botframework.telegram.screen.ScreenContext;
 import ru.tardyon.botframework.telegram.screen.ScreenEngine;
 import ru.tardyon.botframework.telegram.screen.ScreenNavigator;
@@ -291,6 +292,9 @@ public final class TelegramScreenAnnotationRegistrar implements SmartInitializin
                         if (action.kind() != ScreenAction.Kind.UNHANDLED) {
                             return action;
                         }
+                    }
+                    if (addBackButton && callbackQuery != null && ScreenCallbackData.back().equals(callbackQuery.data())) {
+                        return ScreenAction.back();
                     }
                     return ScreenAction.unhandled();
                 }

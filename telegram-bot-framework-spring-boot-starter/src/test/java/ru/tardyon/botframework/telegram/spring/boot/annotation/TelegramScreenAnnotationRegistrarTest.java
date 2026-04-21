@@ -78,6 +78,32 @@ class TelegramScreenAnnotationRegistrarTest {
     }
 
     @Test
+    void customBackHandlerOverridesDefaultBackAction() {
+        contextRunner
+            .withUserConfiguration(CustomBackScreenTestConfiguration.class)
+            .run(context -> {
+                Router router = context.getBean(Router.class);
+                ScreenEngine screenEngine = context.getBean(ScreenEngine.class);
+                ScreenStateStorage screenStateStorage = context.getBean(ScreenStateStorage.class);
+                InMemoryStateStorage userStateStorage = new InMemoryStateStorage();
+
+                UpdateContext startContext = new UpdateContext(messageUpdate(10L, "/screen_start"), null, userStateStorage, "bot-test");
+                router.route(startContext);
+
+                UpdateContext settingsContext = new UpdateContext(messageUpdate(11L, "to_settings"), null, userStateStorage, "bot-test");
+                assertThat(screenEngine.handle(settingsContext)).isTrue();
+
+                UpdateContext backContext = new UpdateContext(callbackUpdate(12L, ScreenCallbackData.back()), null, userStateStorage, "bot-test");
+                assertThat(screenEngine.handle(backContext)).isTrue();
+
+                String current = screenStateStorage.find(new ru.tardyon.botframework.telegram.screen.ScreenKey("bot-test", 200L))
+                    .flatMap(stack -> stack.current().map(ru.tardyon.botframework.telegram.screen.ScreenFrame::screenId))
+                    .orElse(null);
+                assertThat(current).isEqualTo("custom_back_result");
+            });
+    }
+
+    @Test
     void failsFastWhenScreenViewMethodHasInvalidReturnType() {
         contextRunner
             .withUserConfiguration(InvalidScreenConfiguration.class)
@@ -160,7 +186,7 @@ class TelegramScreenAnnotationRegistrarTest {
             return ScreenView.builder().text("home").build();
         }
 
-        @Screen(id = "settings")
+        @Screen(id = "settings", addBackButton = true)
         public ScreenView settings(ScreenContext context) {
             return ScreenView.builder().text("settings").build();
         }
@@ -170,9 +196,53 @@ class TelegramScreenAnnotationRegistrarTest {
             return ScreenAction.push("settings");
         }
 
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class CustomBackScreenTestConfiguration {
+        @Bean
+        ScreenViewRenderer testScreenViewRenderer() {
+            return (updateContext, screenStateContext, chatId, view) -> {
+            };
+        }
+
+        @Bean
+        ScreenEngine screenEngine(ru.tardyon.botframework.telegram.screen.ScreenRegistry screenRegistry, ScreenStateStorage screenStateStorage) {
+            return new ScreenEngine(screenRegistry, screenStateStorage, testScreenViewRenderer());
+        }
+
+        @Bean
+        CustomBackScreenController customBackScreenController() {
+            return new CustomBackScreenController();
+        }
+    }
+
+    @ScreenController
+    static class CustomBackScreenController {
+
+        @Screen(id = "home", startCommand = "screen_start")
+        public ScreenView home() {
+            return ScreenView.builder().text("home").build();
+        }
+
+        @Screen(id = "settings", addBackButton = true)
+        public ScreenView settings() {
+            return ScreenView.builder().text("settings").build();
+        }
+
+        @Screen(id = "custom_back_result")
+        public ScreenView customBackResult() {
+            return ScreenView.builder().text("custom").build();
+        }
+
+        @OnScreenMessage(screen = "home", textEquals = "to_settings")
+        public ScreenAction toSettings() {
+            return ScreenAction.push("settings");
+        }
+
         @OnScreenCallback(screen = "settings", callbackEquals = "screen:nav:back")
-        public ScreenAction back(CallbackQuery callbackQuery) {
-            return ScreenAction.back();
+        public ScreenAction customBack() {
+            return ScreenAction.replace("custom_back_result");
         }
     }
 
