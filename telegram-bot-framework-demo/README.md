@@ -125,6 +125,24 @@ spring:
       port: 6379
 ```
 
+## Use Redis for screen state
+
+```yaml
+telegram:
+  bot:
+    screen-state:
+      storage: redis
+      redis:
+        key-prefix: telegram:screen
+        ttl-seconds: 86400
+
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+```
+
 ## Run demo (polling + local Bot API)
 
 ```bash

@@ -3,6 +3,7 @@ package ru.tardyon.botframework.telegram.screen;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public final class ScreenStateContext {
 
@@ -29,7 +30,7 @@ public final class ScreenStateContext {
     }
 
     public void setRenderedMessageId(Integer messageId) {
-        storage.getOrCreate(key).setRenderedMessageId(messageId);
+        mutateStack(stack -> stack.setRenderedMessageId(messageId));
     }
 
     public Optional<ScreenStack.RenderedMessageKind> renderedMessageKind() {
@@ -37,11 +38,13 @@ public final class ScreenStateContext {
     }
 
     public void setRenderedMessageKind(ScreenStack.RenderedMessageKind renderedMessageKind) {
-        storage.getOrCreate(key).setRenderedMessageKind(renderedMessageKind);
+        mutateStack(stack -> stack.setRenderedMessageKind(renderedMessageKind));
     }
 
     public void putData(String key, Object value) {
-        currentFrame().putData(key, value);
+        mutateStack(stack -> stack.current()
+            .orElseThrow(() -> new IllegalStateException("No active screen frame for key: " + this.key))
+            .putData(key, value));
     }
 
     public Optional<Object> getData(String key) {
@@ -53,12 +56,20 @@ public final class ScreenStateContext {
     }
 
     public void clearData() {
-        currentFrame().clearData();
+        mutateStack(stack -> stack.current()
+            .orElseThrow(() -> new IllegalStateException("No active screen frame for key: " + key))
+            .clearData());
     }
 
     private ScreenFrame currentFrame() {
         return storage.getOrCreate(key)
             .current()
             .orElseThrow(() -> new IllegalStateException("No active screen frame for key: " + key));
+    }
+
+    private void mutateStack(Consumer<ScreenStack> mutator) {
+        ScreenStack stack = storage.getOrCreate(key);
+        mutator.accept(stack);
+        storage.save(key, stack);
     }
 }

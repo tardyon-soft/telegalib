@@ -2,6 +2,7 @@ package ru.tardyon.botframework.telegram.screen;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.List;
 import java.util.Optional;
 
 public final class ScreenStack {
@@ -65,5 +66,36 @@ public final class ScreenStack {
 
     public synchronized void setRenderedMessageKind(RenderedMessageKind renderedMessageKind) {
         this.renderedMessageKind = renderedMessageKind;
+    }
+
+    public synchronized List<ScreenFrame> framesSnapshot() {
+        return frames.stream()
+            .map(ScreenStack::copyFrame)
+            .toList();
+    }
+
+    public static ScreenStack restore(
+        List<ScreenFrame> framesSnapshot,
+        Integer renderedMessageId,
+        RenderedMessageKind renderedMessageKind
+    ) {
+        ScreenStack stack = new ScreenStack();
+        if (framesSnapshot != null) {
+            for (ScreenFrame frame : framesSnapshot) {
+                if (frame == null) {
+                    continue;
+                }
+                stack.frames.addLast(copyFrame(frame));
+            }
+        }
+        stack.renderedMessageId = renderedMessageId;
+        stack.renderedMessageKind = renderedMessageKind;
+        return stack;
+    }
+
+    private static ScreenFrame copyFrame(ScreenFrame source) {
+        ScreenFrame copy = new ScreenFrame(source.screenId());
+        source.data().forEach(copy::putData);
+        return copy;
     }
 }

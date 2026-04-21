@@ -47,6 +47,7 @@ import ru.tardyon.botframework.telegram.spring.boot.lifecycle.TelegramBotLifecyc
 import ru.tardyon.botframework.telegram.spring.boot.properties.TelegramBotFrameworkProperties;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramBusinessOperations;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramMonetizationOperations;
+import ru.tardyon.botframework.telegram.spring.boot.state.RedisScreenStateStorage;
 import ru.tardyon.botframework.telegram.spring.boot.state.RedisStateStorage;
 import ru.tardyon.botframework.telegram.spring.boot.webhook.TelegramWebhookController;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotationHandlerRegistrar;
@@ -174,9 +175,33 @@ public class TelegramBotFrameworkAutoConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean
+    @ConditionalOnMissingBean(ScreenStateStorage.class)
+    @ConditionalOnProperty(
+        prefix = "telegram.bot.screen-state",
+        name = "storage",
+        havingValue = "memory",
+        matchIfMissing = true
+    )
     public ScreenStateStorage screenStateStorage() {
         return new InMemoryScreenStateStorage();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ScreenStateStorage.class)
+    @ConditionalOnClass(StringRedisTemplate.class)
+    @ConditionalOnProperty(prefix = "telegram.bot.screen-state", name = "storage", havingValue = "redis")
+    public ScreenStateStorage redisScreenStateStorage(
+        StringRedisTemplate stringRedisTemplate,
+        ObjectMapper telegramObjectMapper,
+        TelegramBotFrameworkProperties properties
+    ) {
+        TelegramBotFrameworkProperties.ScreenRedis redis = properties.getScreenState().getRedis();
+        return new RedisScreenStateStorage(
+            stringRedisTemplate,
+            telegramObjectMapper,
+            redis.getKeyPrefix(),
+            redis.getTtlSeconds()
+        );
     }
 
     @Bean

@@ -102,6 +102,7 @@ public final class ScreenEngine {
                 if (action.targetData() != null) {
                     stack.current().ifPresent(frame -> frame.putData(ScreenAction.TARGET_DATA_KEY, action.targetData()));
                 }
+                screenStateStorage.save(key, stack);
                 renderCurrent(updateContext, key, chatId);
             }
             case REPLACE -> {
@@ -109,10 +110,12 @@ public final class ScreenEngine {
                 if (action.targetData() != null) {
                     stack.current().ifPresent(frame -> frame.putData(ScreenAction.TARGET_DATA_KEY, action.targetData()));
                 }
+                screenStateStorage.save(key, stack);
                 renderCurrent(updateContext, key, chatId);
             }
             case BACK -> {
                 stack.back();
+                screenStateStorage.save(key, stack);
                 renderCurrent(updateContext, key, chatId);
             }
             case CLEAR -> screenStateStorage.clear(key);
@@ -164,6 +167,7 @@ public final class ScreenEngine {
         public void push(String screenId) {
             ScreenStack stack = screenStateStorage.getOrCreate(key);
             stack.push(requireScreenId(screenId));
+            screenStateStorage.save(key, stack);
             ScreenEngine.this.renderCurrent(updateContext, key, chatId);
         }
 
@@ -171,6 +175,7 @@ public final class ScreenEngine {
         public void replace(String screenId) {
             ScreenStack stack = screenStateStorage.getOrCreate(key);
             stack.replace(requireScreenId(screenId));
+            screenStateStorage.save(key, stack);
             ScreenEngine.this.renderCurrent(updateContext, key, chatId);
         }
 
@@ -178,6 +183,7 @@ public final class ScreenEngine {
         public boolean back() {
             ScreenStack stack = screenStateStorage.getOrCreate(key);
             boolean movedBack = stack.back();
+            screenStateStorage.save(key, stack);
             ScreenEngine.this.renderCurrent(updateContext, key, chatId);
             return movedBack;
         }

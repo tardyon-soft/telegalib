@@ -94,6 +94,29 @@ spring:
       port: 6379
 ```
 
+## Screen state storage (memory/redis)
+
+Default is in-memory:
+
+```yaml
+telegram:
+  bot:
+    screen-state:
+      storage: memory
+```
+
+Redis storage:
+
+```yaml
+telegram:
+  bot:
+    screen-state:
+      storage: redis
+      redis:
+        key-prefix: telegram:screen
+        ttl-seconds: 86400
+```
+
 ## Webhook mode (`application.yml`)
 
 ```yaml

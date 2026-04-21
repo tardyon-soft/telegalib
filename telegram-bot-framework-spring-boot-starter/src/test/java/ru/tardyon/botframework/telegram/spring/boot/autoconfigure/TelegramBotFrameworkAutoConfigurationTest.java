@@ -23,6 +23,7 @@ import ru.tardyon.botframework.telegram.dispatcher.Router;
 import ru.tardyon.botframework.telegram.dispatcher.middleware.UpdateMiddleware;
 import ru.tardyon.botframework.telegram.polling.LongPollingOptions;
 import ru.tardyon.botframework.telegram.polling.LongPollingRunner;
+import ru.tardyon.botframework.telegram.screen.InMemoryScreenStateStorage;
 import ru.tardyon.botframework.telegram.screen.ScreenEngine;
 import ru.tardyon.botframework.telegram.screen.ScreenRegistry;
 import ru.tardyon.botframework.telegram.screen.ScreenStateStorage;
@@ -33,6 +34,7 @@ import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramAnnotatio
 import ru.tardyon.botframework.telegram.spring.boot.annotation.TelegramScreenAnnotationRegistrar;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramBusinessOperations;
 import ru.tardyon.botframework.telegram.spring.boot.service.TelegramMonetizationOperations;
+import ru.tardyon.botframework.telegram.spring.boot.state.RedisScreenStateStorage;
 import ru.tardyon.botframework.telegram.spring.boot.state.RedisStateStorage;
 import ru.tardyon.botframework.telegram.spring.boot.widget.AnnotatedWidgetRegistry;
 import ru.tardyon.botframework.telegram.spring.boot.widget.TelegramWidgetAnnotationRegistrar;
@@ -80,6 +82,7 @@ class TelegramBotFrameworkAutoConfigurationTest {
                 assertThat(context).hasSingleBean(BotApiCapabilities.class);
                 assertThat(context).hasSingleBean(StateStorage.class);
                 assertThat(context.getBean(StateStorage.class)).isInstanceOf(InMemoryStateStorage.class);
+                assertThat(context.getBean(ScreenStateStorage.class)).isInstanceOf(InMemoryScreenStateStorage.class);
             });
     }
 
@@ -98,6 +101,24 @@ class TelegramBotFrameworkAutoConfigurationTest {
             .run(context -> {
                 assertThat(context).hasSingleBean(StateStorage.class);
                 assertThat(context.getBean(StateStorage.class)).isInstanceOf(RedisStateStorage.class);
+            });
+    }
+
+    @Test
+    void createsRedisScreenStateStorageWhenConfigured() {
+        contextRunner
+            .withUserConfiguration(RedisTemplateConfiguration.class)
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false",
+                "telegram.bot.screen-state.storage=redis",
+                "telegram.bot.screen-state.redis.key-prefix=test:screen",
+                "telegram.bot.screen-state.redis.ttl-seconds=900"
+            )
+            .run(context -> {
+                assertThat(context).hasSingleBean(ScreenStateStorage.class);
+                assertThat(context.getBean(ScreenStateStorage.class)).isInstanceOf(RedisScreenStateStorage.class);
             });
     }
 

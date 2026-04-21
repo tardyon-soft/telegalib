@@ -14,6 +14,12 @@ telegram:
       # redis:
       #   key-prefix: telegram:fsm
       #   ttl-seconds: 86400
+    screen-state:
+      storage: memory
+      # storage: redis
+      # redis:
+      #   key-prefix: telegram:screen
+      #   ttl-seconds: 86400
     polling:
       enabled: true
       timeout: 30
