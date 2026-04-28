@@ -10,12 +10,14 @@ import ru.tardyon.botframework.telegram.api.model.InlineQuery;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberUpdated;
 import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
 import ru.tardyon.botframework.telegram.dispatcher.filter.ContextFilter;
 import ru.tardyon.botframework.telegram.dispatcher.filter.Filter;
 import ru.tardyon.botframework.telegram.dispatcher.filter.Filters;
 import ru.tardyon.botframework.telegram.dispatcher.handler.CallbackQueryHandler;
+import ru.tardyon.botframework.telegram.dispatcher.handler.ChatMemberUpdatedHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.ChosenInlineResultHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.InlineQueryHandler;
 import ru.tardyon.botframework.telegram.dispatcher.handler.MessageHandler;
@@ -34,6 +36,10 @@ public class Router {
     private final List<ContextInlineQueryRoute> contextInlineQueryRoutes = new CopyOnWriteArrayList<>();
     private final List<ChosenInlineResultRoute> chosenInlineResultRoutes = new CopyOnWriteArrayList<>();
     private final List<ContextChosenInlineResultRoute> contextChosenInlineResultRoutes = new CopyOnWriteArrayList<>();
+    private final List<ChatMemberUpdatedRoute> myChatMemberRoutes = new CopyOnWriteArrayList<>();
+    private final List<ContextChatMemberUpdatedRoute> contextMyChatMemberRoutes = new CopyOnWriteArrayList<>();
+    private final List<ChatMemberUpdatedRoute> chatMemberRoutes = new CopyOnWriteArrayList<>();
+    private final List<ContextChatMemberUpdatedRoute> contextChatMemberRoutes = new CopyOnWriteArrayList<>();
     private final List<ShippingQueryRoute> shippingQueryRoutes = new CopyOnWriteArrayList<>();
     private final List<ContextShippingQueryRoute> contextShippingQueryRoutes = new CopyOnWriteArrayList<>();
     private final List<PreCheckoutQueryRoute> preCheckoutQueryRoutes = new CopyOnWriteArrayList<>();
@@ -122,6 +128,46 @@ public class Router {
 
     public Router chosenInlineResult(ContextFilter<ChosenInlineResult> filter, ChosenInlineResultHandler handler) {
         contextChosenInlineResultRoutes.add(new ContextChosenInlineResultRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router myChatMember(Filter<ChatMemberUpdated> filter, ChatMemberUpdatedHandler handler) {
+        myChatMemberRoutes.add(new ChatMemberUpdatedRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router myChatMember(ChatMemberUpdatedHandler handler) {
+        return myChatMember(Filters.any(), handler);
+    }
+
+    public Router myChatMember(ContextFilter<ChatMemberUpdated> filter, ChatMemberUpdatedHandler handler) {
+        contextMyChatMemberRoutes.add(new ContextChatMemberUpdatedRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router chatMember(Filter<ChatMemberUpdated> filter, ChatMemberUpdatedHandler handler) {
+        chatMemberRoutes.add(new ChatMemberUpdatedRoute(
+            Objects.requireNonNull(filter, "filter must not be null"),
+            Objects.requireNonNull(handler, "handler must not be null")
+        ));
+        return this;
+    }
+
+    public Router chatMember(ChatMemberUpdatedHandler handler) {
+        return chatMember(Filters.any(), handler);
+    }
+
+    public Router chatMember(ContextFilter<ChatMemberUpdated> filter, ChatMemberUpdatedHandler handler) {
+        contextChatMemberRoutes.add(new ContextChatMemberUpdatedRoute(
             Objects.requireNonNull(filter, "filter must not be null"),
             Objects.requireNonNull(handler, "handler must not be null")
         ));
@@ -300,6 +346,14 @@ public class Router {
         if (chosenInlineResult != null) {
             routeChosenInlineResult(updateContext, chosenInlineResult);
         }
+        ChatMemberUpdated myChatMember = updateContext.getMyChatMember();
+        if (myChatMember != null) {
+            routeMyChatMember(updateContext, myChatMember);
+        }
+        ChatMemberUpdated chatMember = updateContext.getChatMember();
+        if (chatMember != null) {
+            routeChatMember(updateContext, chatMember);
+        }
 
         for (Router router : includedRouters) {
             router.route(updateContext);
@@ -371,6 +425,36 @@ public class Router {
         }
         for (ChosenInlineResultHandler matchedHandler : matchedHandlers) {
             matchedHandler.handle(context, chosenInlineResult);
+        }
+    }
+
+    private void routeMyChatMember(UpdateContext context, ChatMemberUpdated chatMemberUpdated) {
+        routeChatMemberUpdated(context, chatMemberUpdated, myChatMemberRoutes, contextMyChatMemberRoutes);
+    }
+
+    private void routeChatMember(UpdateContext context, ChatMemberUpdated chatMemberUpdated) {
+        routeChatMemberUpdated(context, chatMemberUpdated, chatMemberRoutes, contextChatMemberRoutes);
+    }
+
+    private void routeChatMemberUpdated(
+        UpdateContext context,
+        ChatMemberUpdated chatMemberUpdated,
+        List<ChatMemberUpdatedRoute> routes,
+        List<ContextChatMemberUpdatedRoute> contextRoutes
+    ) {
+        List<ChatMemberUpdatedHandler> matchedHandlers = new ArrayList<>();
+        for (ChatMemberUpdatedRoute route : routes) {
+            if (route.filter().test(chatMemberUpdated)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (ContextChatMemberUpdatedRoute route : contextRoutes) {
+            if (route.filter().test(context, chatMemberUpdated)) {
+                matchedHandlers.add(route.handler());
+            }
+        }
+        for (ChatMemberUpdatedHandler matchedHandler : matchedHandlers) {
+            matchedHandler.handle(context, chatMemberUpdated);
         }
     }
 
@@ -500,6 +584,15 @@ public class Router {
     private record ContextChosenInlineResultRoute(
         ContextFilter<ChosenInlineResult> filter,
         ChosenInlineResultHandler handler
+    ) {
+    }
+
+    private record ChatMemberUpdatedRoute(Filter<ChatMemberUpdated> filter, ChatMemberUpdatedHandler handler) {
+    }
+
+    private record ContextChatMemberUpdatedRoute(
+        ContextFilter<ChatMemberUpdated> filter,
+        ChatMemberUpdatedHandler handler
     ) {
     }
 

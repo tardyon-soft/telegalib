@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberUpdated;
 import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
 
@@ -22,8 +23,46 @@ public record Update(
     @JsonProperty("edited_business_message") Message editedBusinessMessage,
     @JsonProperty("deleted_business_messages") BusinessMessagesDeleted deletedBusinessMessages,
     @JsonProperty("inline_query") InlineQuery inlineQuery,
-    @JsonProperty("chosen_inline_result") ChosenInlineResult chosenInlineResult
+    @JsonProperty("chosen_inline_result") ChosenInlineResult chosenInlineResult,
+    @JsonProperty("my_chat_member") ChatMemberUpdated myChatMember,
+    @JsonProperty("chat_member") ChatMemberUpdated chatMember
 ) {
+
+    public Update(
+        Long updateId,
+        Message message,
+        Message editedMessage,
+        Message channelPost,
+        Message editedChannelPost,
+        CallbackQuery callbackQuery,
+        ShippingQuery shippingQuery,
+        PreCheckoutQuery preCheckoutQuery,
+        BusinessConnection businessConnection,
+        Message businessMessage,
+        Message editedBusinessMessage,
+        BusinessMessagesDeleted deletedBusinessMessages,
+        InlineQuery inlineQuery,
+        ChosenInlineResult chosenInlineResult
+    ) {
+        this(
+            updateId,
+            message,
+            editedMessage,
+            channelPost,
+            editedChannelPost,
+            callbackQuery,
+            shippingQuery,
+            preCheckoutQuery,
+            businessConnection,
+            businessMessage,
+            editedBusinessMessage,
+            deletedBusinessMessages,
+            inlineQuery,
+            chosenInlineResult,
+            null,
+            null
+        );
+    }
 
     public Update(
         Long updateId,
@@ -49,7 +88,9 @@ public record Update(
             null,
             null,
             inlineQuery,
-            chosenInlineResult
+            chosenInlineResult,
+            null,
+            null
         );
     }
 
@@ -79,7 +120,9 @@ public record Update(
             null,
             null,
             inlineQuery,
-            chosenInlineResult
+            chosenInlineResult,
+            null,
+            null
         );
     }
 }

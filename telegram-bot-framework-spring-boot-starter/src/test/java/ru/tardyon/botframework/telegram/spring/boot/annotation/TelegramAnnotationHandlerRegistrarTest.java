@@ -18,6 +18,9 @@ import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.User;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberAdministrator;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberLeft;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberUpdated;
 import ru.tardyon.botframework.telegram.api.model.payment.Gift;
 import ru.tardyon.botframework.telegram.api.model.payment.GiftInfo;
 import ru.tardyon.botframework.telegram.api.model.payment.PaidMediaInfo;
@@ -64,6 +67,8 @@ class TelegramAnnotationHandlerRegistrarTest {
                 router.route(new UpdateContext(updateWithBusinessMessage("biz"), apiClient));
                 router.route(new UpdateContext(updateWithEditedBusinessMessage("biz-edited"), apiClient));
                 router.route(new UpdateContext(updateWithDeletedBusinessMessages(), apiClient));
+                router.route(new UpdateContext(updateWithMyChatMember(), apiClient));
+                router.route(new UpdateContext(updateWithChatMember(), apiClient));
                 router.route(new UpdateContext(updateWithWebAppDataMessage(), apiClient));
                 router.route(new UpdateContext(updateWithGiftServiceMessage(), apiClient));
                 router.route(new UpdateContext(updateWithPaidMediaServiceMessage(), apiClient));
@@ -85,6 +90,8 @@ class TelegramAnnotationHandlerRegistrarTest {
                 assertThat(controller.businessMessageCalls.get()).isEqualTo(1);
                 assertThat(controller.editedBusinessMessageCalls.get()).isEqualTo(1);
                 assertThat(controller.deletedBusinessMessagesCalls.get()).isEqualTo(1);
+                assertThat(controller.myChatMemberCalls.get()).isEqualTo(1);
+                assertThat(controller.chatMemberCalls.get()).isEqualTo(1);
                 assertThat(controller.webAppDataCalls.get()).isEqualTo(1);
                 assertThat(controller.giftServiceCalls.get()).isEqualTo(1);
                 assertThat(controller.paidMediaServiceCalls.get()).isEqualTo(1);
@@ -250,6 +257,28 @@ class TelegramAnnotationHandlerRegistrarTest {
             java.util.List.of(12, 13)
         );
         return new Update(10L, null, null, null, null, null, null, null, null, null, null, deleted, null, null);
+    }
+
+    private static Update updateWithMyChatMember() {
+        return new Update(16L, null, null, null, null, null, null, null, null, null, null, null, null, null, chatMemberUpdated(), null);
+    }
+
+    private static Update updateWithChatMember() {
+        return new Update(17L, null, null, null, null, null, null, null, null, null, null, null, null, null, null, chatMemberUpdated());
+    }
+
+    private static ChatMemberUpdated chatMemberUpdated() {
+        User bot = new User(300L, true, "Bot", null, "test_bot", null, null, null, null);
+        return new ChatMemberUpdated(
+            new Chat(-1001L, "channel", "News", "news", null, null, null),
+            new User(100L, false, "John", null, "john", "en", null, null, null),
+            1_710_000_009L,
+            new ChatMemberLeft("left", bot),
+            new ChatMemberAdministrator("administrator", bot, null, null, null),
+            null,
+            null,
+            null
+        );
     }
 
     private static Update updateWithGiftServiceMessage() {
@@ -418,6 +447,8 @@ class TelegramAnnotationHandlerRegistrarTest {
         private final AtomicInteger businessMessageCalls = new AtomicInteger();
         private final AtomicInteger editedBusinessMessageCalls = new AtomicInteger();
         private final AtomicInteger deletedBusinessMessagesCalls = new AtomicInteger();
+        private final AtomicInteger myChatMemberCalls = new AtomicInteger();
+        private final AtomicInteger chatMemberCalls = new AtomicInteger();
         private final AtomicInteger webAppDataCalls = new AtomicInteger();
         private final AtomicInteger giftServiceCalls = new AtomicInteger();
         private final AtomicInteger paidMediaServiceCalls = new AtomicInteger();
@@ -496,6 +527,20 @@ class TelegramAnnotationHandlerRegistrarTest {
         public void onDeletedBusinessMessages(BusinessMessagesDeleted deleted) {
             deletedBusinessMessagesCalls.incrementAndGet();
             assertThat(deleted.messageIds()).containsExactly(12, 13);
+        }
+
+        @OnMyChatMember
+        public void onMyChatMember(ChatMemberUpdated chatMemberUpdated, UpdateContext context) {
+            myChatMemberCalls.incrementAndGet();
+            assertThat(chatMemberUpdated.chat().type()).isEqualTo("channel");
+            assertThat(chatMemberUpdated.newChatMember().status()).isEqualTo("administrator");
+            assertThat(context).isNotNull();
+        }
+
+        @OnChatMember
+        public void onChatMember(ChatMemberUpdated chatMemberUpdated) {
+            chatMemberCalls.incrementAndGet();
+            assertThat(chatMemberUpdated.oldChatMember().status()).isEqualTo("left");
         }
 
         @OnMessage(webAppDataPresent = true)

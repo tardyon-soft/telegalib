@@ -12,6 +12,7 @@ import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberUpdated;
 import ru.tardyon.botframework.telegram.api.model.payment.PreCheckoutQuery;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
@@ -41,6 +42,8 @@ public final class UpdateContext {
         DELETED_BUSINESS_MESSAGES,
         INLINE_QUERY,
         CHOSEN_INLINE_RESULT,
+        MY_CHAT_MEMBER,
+        CHAT_MEMBER,
         UNSUPPORTED
     }
 
@@ -56,6 +59,8 @@ public final class UpdateContext {
     private final BusinessMessagesDeleted deletedBusinessMessages;
     private final InlineQuery inlineQuery;
     private final ChosenInlineResult chosenInlineResult;
+    private final ChatMemberUpdated myChatMember;
+    private final ChatMemberUpdated chatMember;
     private final TelegramApiClient telegramApiClient;
     private final StateContext stateContext;
     private final ConcurrentMap<String, Object> attributes = new ConcurrentHashMap<>();
@@ -93,6 +98,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.editedMessage() != null) {
             this.updateType = UpdateType.EDITED_MESSAGE;
             this.message = update.editedMessage();
@@ -105,6 +112,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.channelPost() != null) {
             this.updateType = UpdateType.CHANNEL_POST;
             this.message = update.channelPost();
@@ -117,6 +126,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.editedChannelPost() != null) {
             this.updateType = UpdateType.EDITED_CHANNEL_POST;
             this.message = update.editedChannelPost();
@@ -129,6 +140,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.callbackQuery() != null) {
             this.updateType = UpdateType.CALLBACK_QUERY;
             this.message = null;
@@ -141,6 +154,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.shippingQuery() != null) {
             this.updateType = UpdateType.SHIPPING_QUERY;
             this.message = null;
@@ -153,6 +168,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.preCheckoutQuery() != null) {
             this.updateType = UpdateType.PRE_CHECKOUT_QUERY;
             this.message = null;
@@ -165,6 +182,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.businessConnection() != null) {
             this.updateType = UpdateType.BUSINESS_CONNECTION;
             this.message = null;
@@ -177,6 +196,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.businessMessage() != null) {
             this.updateType = UpdateType.BUSINESS_MESSAGE;
             this.message = null;
@@ -189,6 +210,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.editedBusinessMessage() != null) {
             this.updateType = UpdateType.EDITED_BUSINESS_MESSAGE;
             this.message = null;
@@ -201,6 +224,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.deletedBusinessMessages() != null) {
             this.updateType = UpdateType.DELETED_BUSINESS_MESSAGES;
             this.message = null;
@@ -213,6 +238,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = update.deletedBusinessMessages();
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.inlineQuery() != null) {
             this.updateType = UpdateType.INLINE_QUERY;
             this.message = null;
@@ -225,6 +252,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = update.inlineQuery();
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         } else if (update.chosenInlineResult() != null) {
             this.updateType = UpdateType.CHOSEN_INLINE_RESULT;
             this.message = null;
@@ -237,6 +266,36 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = update.chosenInlineResult();
+            this.myChatMember = null;
+            this.chatMember = null;
+        } else if (update.myChatMember() != null) {
+            this.updateType = UpdateType.MY_CHAT_MEMBER;
+            this.message = null;
+            this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
+            this.inlineQuery = null;
+            this.chosenInlineResult = null;
+            this.myChatMember = update.myChatMember();
+            this.chatMember = null;
+        } else if (update.chatMember() != null) {
+            this.updateType = UpdateType.CHAT_MEMBER;
+            this.message = null;
+            this.callbackQuery = null;
+            this.shippingQuery = null;
+            this.preCheckoutQuery = null;
+            this.businessConnection = null;
+            this.businessMessage = null;
+            this.editedBusinessMessage = null;
+            this.deletedBusinessMessages = null;
+            this.inlineQuery = null;
+            this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = update.chatMember();
         } else {
             this.updateType = UpdateType.UNSUPPORTED;
             this.message = null;
@@ -249,6 +308,8 @@ public final class UpdateContext {
             this.deletedBusinessMessages = null;
             this.inlineQuery = null;
             this.chosenInlineResult = null;
+            this.myChatMember = null;
+            this.chatMember = null;
         }
     }
 
@@ -298,6 +359,14 @@ public final class UpdateContext {
 
     public ChosenInlineResult getChosenInlineResult() {
         return chosenInlineResult;
+    }
+
+    public ChatMemberUpdated getMyChatMember() {
+        return myChatMember;
+    }
+
+    public ChatMemberUpdated getChatMember() {
+        return chatMember;
     }
 
     public TelegramMessage telegramMessage() {

@@ -16,6 +16,7 @@ import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessMessagesDeleted;
+import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMemberUpdated;
 import ru.tardyon.botframework.telegram.api.model.checklist.Checklist;
 import ru.tardyon.botframework.telegram.api.model.payment.GiftInfo;
 import ru.tardyon.botframework.telegram.api.model.payment.PaidMediaInfo;
@@ -67,7 +68,9 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
             || method.isAnnotationPresent(OnBusinessConnection.class)
             || method.isAnnotationPresent(OnBusinessMessage.class)
             || method.isAnnotationPresent(OnEditedBusinessMessage.class)
-            || method.isAnnotationPresent(OnDeletedBusinessMessages.class);
+            || method.isAnnotationPresent(OnDeletedBusinessMessages.class)
+            || method.isAnnotationPresent(OnMyChatMember.class)
+            || method.isAnnotationPresent(OnChatMember.class);
     }
 
     private void registerMethod(Object bean, Method method) {
@@ -101,6 +104,12 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
         }
         if (method.isAnnotationPresent(OnDeletedBusinessMessages.class)) {
             registerDeletedBusinessMessagesHandler(bean, method, method.getAnnotation(OnDeletedBusinessMessages.class));
+        }
+        if (method.isAnnotationPresent(OnMyChatMember.class)) {
+            registerMyChatMemberHandler(bean, method, method.getAnnotation(OnMyChatMember.class));
+        }
+        if (method.isAnnotationPresent(OnChatMember.class)) {
+            registerChatMemberHandler(bean, method, method.getAnnotation(OnChatMember.class));
         }
     }
 
@@ -262,6 +271,24 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
         );
     }
 
+    private void registerMyChatMemberHandler(Object bean, Method method, OnMyChatMember annotation) {
+        validateParameters(method, HandlerType.MY_CHAT_MEMBER);
+        String state = annotation.state();
+        router.myChatMember((context, chatMemberUpdated) -> !hasText(state)
+                || Filters.<ChatMemberUpdated>stateEquals(state).test(context, chatMemberUpdated),
+            (context, chatMemberUpdated) -> invokeHandler(bean, method, HandlerType.MY_CHAT_MEMBER, context, chatMemberUpdated)
+        );
+    }
+
+    private void registerChatMemberHandler(Object bean, Method method, OnChatMember annotation) {
+        validateParameters(method, HandlerType.CHAT_MEMBER);
+        String state = annotation.state();
+        router.chatMember((context, chatMemberUpdated) -> !hasText(state)
+                || Filters.<ChatMemberUpdated>stateEquals(state).test(context, chatMemberUpdated),
+            (context, chatMemberUpdated) -> invokeHandler(bean, method, HandlerType.CHAT_MEMBER, context, chatMemberUpdated)
+        );
+    }
+
     private Filter<Message> buildBusinessMessageFilter(OnBusinessMessage annotation) {
         return buildBusinessMessageFilter(
             annotation.textEquals(),
@@ -390,6 +417,7 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
             case PRE_CHECKOUT_QUERY -> parameterType == PreCheckoutQuery.class;
             case BUSINESS_CONNECTION -> parameterType == BusinessConnection.class;
             case DELETED_BUSINESS_MESSAGES -> parameterType == BusinessMessagesDeleted.class;
+            case MY_CHAT_MEMBER, CHAT_MEMBER -> parameterType == ChatMemberUpdated.class;
         };
     }
 
@@ -405,7 +433,8 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
             case MESSAGE -> resolveMessageParameter(parameterType, context, event);
             case BUSINESS_MESSAGE, EDITED_BUSINESS_MESSAGE -> resolveBusinessMessageParameter(parameterType, context, event);
             case CALLBACK_QUERY -> resolveCallbackParameter(parameterType, context, event);
-            case SHIPPING_QUERY, PRE_CHECKOUT_QUERY, BUSINESS_CONNECTION, DELETED_BUSINESS_MESSAGES, INLINE_QUERY, CHOSEN_INLINE_RESULT -> event;
+            case SHIPPING_QUERY, PRE_CHECKOUT_QUERY, BUSINESS_CONNECTION, DELETED_BUSINESS_MESSAGES, INLINE_QUERY,
+                 CHOSEN_INLINE_RESULT, MY_CHAT_MEMBER, CHAT_MEMBER -> event;
         };
     }
 
@@ -504,6 +533,8 @@ public final class TelegramAnnotationHandlerRegistrar implements SmartInitializi
         DELETED_BUSINESS_MESSAGES,
         CALLBACK_QUERY,
         INLINE_QUERY,
-        CHOSEN_INLINE_RESULT
+        CHOSEN_INLINE_RESULT,
+        MY_CHAT_MEMBER,
+        CHAT_MEMBER
     }
 }
