@@ -32,6 +32,7 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.EditStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatAdministratorsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberCountRequest;
@@ -68,6 +69,7 @@ import ru.tardyon.botframework.telegram.api.method.SendMessageRequest;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommandScopeDefault;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
+import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
 import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklist;
 import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklistTask;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
@@ -782,6 +784,47 @@ class DefaultTelegramApiClientStage2MethodsTest {
 
         assertEquals("/bottoken/getChatMenuButton", httpClient.lastRequest().uri().getPath());
         assertTrue(result instanceof ru.tardyon.botframework.telegram.api.model.menu.MenuButtonWebApp);
+    }
+
+    @Test
+    void getChatUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{
+                  "id":-1001234567890,
+                  "type":"channel",
+                  "title":"Demo Channel",
+                  "username":"demo_channel",
+                  "description":"Channel description",
+                  "invite_link":"https://t.me/+abc",
+                  "photo":{
+                    "small_file_id":"small",
+                    "small_file_unique_id":"small_unique",
+                    "big_file_id":"big",
+                    "big_file_unique_id":"big_unique"
+                  },
+                  "active_usernames":["demo_channel","demo_channel_alias"],
+                  "linked_chat_id":-1009876543210,
+                  "can_send_paid_media":true
+                }}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        ChatFullInfo result = client.getChat(new GetChatRequest("@demo_channel"));
+
+        assertEquals("/bottoken/getChat", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":\"@demo_channel\""));
+        assertEquals(-1001234567890L, result.id());
+        assertEquals("channel", result.type());
+        assertEquals("Demo Channel", result.title());
+        assertEquals("Channel description", result.description());
+        assertEquals("https://t.me/+abc", result.inviteLink());
+        assertEquals("big", result.photo().bigFileId());
+        assertEquals(2, result.activeUsernames().size());
+        assertEquals(-1009876543210L, result.linkedChatId());
+        assertTrue(result.canSendPaidMedia());
     }
 
     @Test

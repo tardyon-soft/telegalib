@@ -31,6 +31,7 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest
 import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatAdministratorsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberCountRequest;
@@ -78,6 +79,7 @@ import ru.tardyon.botframework.telegram.api.file.InputFileStream;
 import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
+import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.TelegramFile;
 import ru.tardyon.botframework.telegram.api.model.Update;
@@ -441,6 +443,11 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     public MenuButton getChatMenuButton(GetChatMenuButtonRequest request) {
         GetChatMenuButtonRequest actualRequest = request == null ? new GetChatMenuButtonRequest(null) : request;
         return invoke("getChatMenuButton", actualRequest, objectMapper.getTypeFactory().constructType(MenuButton.class));
+    }
+
+    @Override
+    public ChatFullInfo getChat(GetChatRequest request) {
+        return invoke("getChat", requireRequest(request), objectMapper.getTypeFactory().constructType(ChatFullInfo.class));
     }
 
     @Override

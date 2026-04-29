@@ -12,6 +12,7 @@ import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.GetChatRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatAdministratorsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberCountRequest;
@@ -55,6 +56,7 @@ import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.UpgradeGiftRequest;
 import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
+import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.TelegramFile;
@@ -167,6 +169,10 @@ public interface TelegramApiClient {
     boolean setChatMenuButton(SetChatMenuButtonRequest request);
 
     MenuButton getChatMenuButton(GetChatMenuButtonRequest request);
+
+    default ChatFullInfo getChat(GetChatRequest request) {
+        throw new UnsupportedOperationException("getChat is not implemented by this TelegramApiClient");
+    }
 
     default ChatMember getChatMember(GetChatMemberRequest request) {
         throw new UnsupportedOperationException("getChatMember is not implemented by this TelegramApiClient");
