@@ -25,6 +25,8 @@ import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.ApproveChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.CopyMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.CopyMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
@@ -38,6 +40,8 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageCaptionRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
+import ru.tardyon.botframework.telegram.api.method.ForwardMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.ForwardMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
@@ -64,11 +68,17 @@ import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteL
 import ru.tardyon.botframework.telegram.api.method.ConvertGiftToStarsRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.PinChatMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.SendAnimationRequest;
+import ru.tardyon.botframework.telegram.api.method.SendAudioRequest;
 import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChatActionRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
+import ru.tardyon.botframework.telegram.api.method.SendPollRequest;
+import ru.tardyon.botframework.telegram.api.method.SendVideoRequest;
+import ru.tardyon.botframework.telegram.api.method.SetChatDescriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSettingsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
@@ -92,6 +102,7 @@ import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
 import ru.tardyon.botframework.telegram.api.model.Message;
+import ru.tardyon.botframework.telegram.api.model.MessageId;
 import ru.tardyon.botframework.telegram.api.model.TelegramFile;
 import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.User;
@@ -183,6 +194,28 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     @Override
     public Message sendMessage(SendMessageRequest request) {
         return invoke("sendMessage", requireRequest(request), objectMapper.getTypeFactory().constructType(Message.class));
+    }
+
+    @Override
+    public Message forwardMessage(ForwardMessageRequest request) {
+        return invoke("forwardMessage", requireRequest(request), objectMapper.getTypeFactory().constructType(Message.class));
+    }
+
+    @Override
+    public List<Message> forwardMessages(ForwardMessagesRequest request) {
+        JavaType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, Message.class);
+        return invoke("forwardMessages", requireRequest(request), listType);
+    }
+
+    @Override
+    public MessageId copyMessage(CopyMessageRequest request) {
+        return invoke("copyMessage", requireRequest(request), objectMapper.getTypeFactory().constructType(MessageId.class));
+    }
+
+    @Override
+    public List<MessageId> copyMessages(CopyMessagesRequest request) {
+        JavaType listType = objectMapper.getTypeFactory().constructCollectionType(List.class, MessageId.class);
+        return invoke("copyMessages", requireRequest(request), listType);
     }
 
     @Override
@@ -486,6 +519,18 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     @Override
+    public boolean pinChatMessage(PinChatMessageRequest request) {
+        Boolean result = invoke("pinChatMessage", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean setChatDescription(SetChatDescriptionRequest request) {
+        Boolean result = invoke("setChatDescription", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
     public boolean setMyCommands(SetMyCommandsRequest request) {
         Boolean result = invoke("setMyCommands", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
@@ -586,6 +631,41 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     public boolean sendChatAction(SendChatActionRequest request) {
         Boolean result = invoke("sendChatAction", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public Message sendVideo(SendVideoRequest request) {
+        SendVideoRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
+        String reference = tryResolveStringReference(actualRequest.video());
+        if (reference != null) {
+            return invoke("sendVideo", new SendMediaJsonPayload(actualRequest.chatId(), actualRequest.businessConnectionId(), reference, null, null, actualRequest.caption(), actualRequest.replyMarkup()), objectMapper.getTypeFactory().constructType(Message.class));
+        }
+        return sendMediaMultipart("sendVideo", "video", actualRequest.chatId(), actualRequest.businessConnectionId(), actualRequest.video(), actualRequest.caption(), actualRequest.replyMarkup());
+    }
+
+    @Override
+    public Message sendAudio(SendAudioRequest request) {
+        SendAudioRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
+        String reference = tryResolveStringReference(actualRequest.audio());
+        if (reference != null) {
+            return invoke("sendAudio", new SendMediaJsonPayload(actualRequest.chatId(), actualRequest.businessConnectionId(), null, reference, null, actualRequest.caption(), actualRequest.replyMarkup()), objectMapper.getTypeFactory().constructType(Message.class));
+        }
+        return sendMediaMultipart("sendAudio", "audio", actualRequest.chatId(), actualRequest.businessConnectionId(), actualRequest.audio(), actualRequest.caption(), actualRequest.replyMarkup());
+    }
+
+    @Override
+    public Message sendAnimation(SendAnimationRequest request) {
+        SendAnimationRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
+        String reference = tryResolveStringReference(actualRequest.animation());
+        if (reference != null) {
+            return invoke("sendAnimation", new SendMediaJsonPayload(actualRequest.chatId(), actualRequest.businessConnectionId(), null, null, reference, actualRequest.caption(), actualRequest.replyMarkup()), objectMapper.getTypeFactory().constructType(Message.class));
+        }
+        return sendMediaMultipart("sendAnimation", "animation", actualRequest.chatId(), actualRequest.businessConnectionId(), actualRequest.animation(), actualRequest.caption(), actualRequest.replyMarkup());
+    }
+
+    @Override
+    public Message sendPoll(SendPollRequest request) {
+        return invoke("sendPoll", requireRequest(request), objectMapper.getTypeFactory().constructType(Message.class));
     }
 
     @Override
@@ -788,6 +868,35 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             return invokeMultipart("sendPhoto", builtMultipart, objectMapper.getTypeFactory().constructType(Message.class));
         } catch (IOException e) {
             throw new TelegramApiException(null, "I/O error while preparing multipart sendPhoto request", null, e);
+        }
+    }
+
+    private Message sendMediaMultipart(
+        String methodName,
+        String partName,
+        Object chatId,
+        String businessConnectionId,
+        InputFile inputFile,
+        String caption,
+        ReplyMarkup replyMarkup
+    ) {
+        try {
+            MultipartFormData multipart = new MultipartFormData()
+                .addField("chat_id", String.valueOf(chatId));
+            if (businessConnectionId != null) {
+                multipart.addField("business_connection_id", businessConnectionId);
+            }
+            if (caption != null) {
+                multipart.addField("caption", caption);
+            }
+            if (replyMarkup != null) {
+                multipart.addField("reply_markup", objectMapper.writeValueAsString(replyMarkup));
+            }
+            addInputFilePart(multipart, partName, inputFile, partName);
+            MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
+            return invokeMultipart(methodName, builtMultipart, objectMapper.getTypeFactory().constructType(Message.class));
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while preparing multipart " + methodName + " request", null, e);
         }
     }
 
@@ -1221,6 +1330,17 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         @JsonProperty("chat_id") Object chatId,
         @JsonProperty("business_connection_id") String businessConnectionId,
         String photo,
+        String caption,
+        @JsonProperty("reply_markup") ReplyMarkup replyMarkup
+    ) {
+    }
+
+    private record SendMediaJsonPayload(
+        @JsonProperty("chat_id") Object chatId,
+        @JsonProperty("business_connection_id") String businessConnectionId,
+        String video,
+        String audio,
+        String animation,
         String caption,
         @JsonProperty("reply_markup") ReplyMarkup replyMarkup
     ) {

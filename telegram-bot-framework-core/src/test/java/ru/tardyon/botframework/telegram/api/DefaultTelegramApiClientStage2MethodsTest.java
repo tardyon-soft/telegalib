@@ -26,6 +26,8 @@ import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.ApproveChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.CopyMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.CopyMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
@@ -39,6 +41,8 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest
 import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.EditStoryRequest;
+import ru.tardyon.botframework.telegram.api.method.ForwardMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.ForwardMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
@@ -56,10 +60,15 @@ import ru.tardyon.botframework.telegram.api.method.DeleteStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChatActionRequest;
+import ru.tardyon.botframework.telegram.api.method.SendAnimationRequest;
+import ru.tardyon.botframework.telegram.api.method.SendAudioRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
+import ru.tardyon.botframework.telegram.api.method.SendPollRequest;
+import ru.tardyon.botframework.telegram.api.method.SendVideoRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.RevokeChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.PinChatMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
@@ -72,6 +81,7 @@ import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.UpgradeGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
+import ru.tardyon.botframework.telegram.api.method.SetChatDescriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
 import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
@@ -81,6 +91,8 @@ import ru.tardyon.botframework.telegram.api.model.command.BotCommandScopeDefault
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
 import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
+import ru.tardyon.botframework.telegram.api.model.Message;
+import ru.tardyon.botframework.telegram.api.model.MessageId;
 import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklist;
 import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklistTask;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
@@ -937,6 +949,75 @@ class DefaultTelegramApiClientStage2MethodsTest {
     }
 
     @Test
+    void copyAndForwardMethodsUseExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"message_id":77}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        MessageId copied = client.copyMessage(new CopyMessageRequest(100L, "@source", 7, null, null));
+        assertEquals("/bottoken/copyMessage", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"from_chat_id\":\"@source\""));
+        assertEquals(77, copied.messageId());
+
+        httpClient.setDefaultJsonBody("""
+            {"ok":true,"result":[{"message_id":77},{"message_id":78}]}
+            """);
+        List<MessageId> copiedMany = client.copyMessages(new CopyMessagesRequest(100L, "@source", List.of(7, 8)));
+        assertEquals("/bottoken/copyMessages", httpClient.lastRequest().uri().getPath());
+        assertEquals(2, copiedMany.size());
+
+        httpClient.setDefaultJsonBody("""
+            {"ok":true,"result":{"message_id":9,"date":1,"chat":{"id":100,"type":"private"}}}
+            """);
+        Message forwarded = client.forwardMessage(new ForwardMessageRequest(100L, "@source", 9));
+        assertEquals("/bottoken/forwardMessage", httpClient.lastRequest().uri().getPath());
+        assertEquals(9, forwarded.messageId());
+
+        httpClient.setDefaultJsonBody("""
+            {"ok":true,"result":[{"message_id":9,"date":1,"chat":{"id":100,"type":"private"}}]}
+            """);
+        List<Message> forwardedMany = client.forwardMessages(new ForwardMessagesRequest(100L, "@source", List.of(9)));
+        assertEquals("/bottoken/forwardMessages", httpClient.lastRequest().uri().getPath());
+        assertEquals(1, forwardedMany.size());
+    }
+
+    @Test
+    void mediaPollAndChatAdminMethodsUseExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"message_id":10,"date":1,"chat":{"id":100,"type":"private"}}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        assertEquals(10, client.sendVideo(SendVideoRequest.of(100L, InputFile.fileId("video-id"))).messageId());
+        assertEquals("/bottoken/sendVideo", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"video\":\"video-id\""));
+
+        client.sendAudio(SendAudioRequest.of(100L, InputFile.fileId("audio-id")));
+        assertEquals("/bottoken/sendAudio", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"audio\":\"audio-id\""));
+
+        client.sendAnimation(SendAnimationRequest.of(100L, InputFile.fileId("anim-id")));
+        assertEquals("/bottoken/sendAnimation", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"animation\":\"anim-id\""));
+
+        client.sendPoll(new SendPollRequest(100L, "Question?", List.of("A", "B"), true, null, null, null));
+        assertEquals("/bottoken/sendPoll", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"options\":[\"A\",\"B\"]"));
+
+        httpClient.setDefaultJsonBody(okTrueResponse());
+        assertTrue(client.pinChatMessage(new PinChatMessageRequest(null, "@demo_channel", 10, true)));
+        assertEquals("/bottoken/pinChatMessage", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.setChatDescription(new SetChatDescriptionRequest("@demo_channel", "Description")));
+        assertEquals("/bottoken/setChatDescription", httpClient.lastRequest().uri().getPath());
+    }
+
+    @Test
     void getChatMemberUsesExpectedMethodAndPayload() {
         RecordingHttpClient httpClient = new RecordingHttpClient(
             """
@@ -1029,7 +1110,7 @@ class DefaultTelegramApiClientStage2MethodsTest {
 
     private static final class RecordingHttpClient extends HttpClient {
 
-        private final byte[] responseBody;
+        private byte[] responseBody;
         private HttpRequest lastRequest;
 
         private RecordingHttpClient(String responseBody) {
@@ -1038,6 +1119,10 @@ class DefaultTelegramApiClientStage2MethodsTest {
 
         HttpRequest lastRequest() {
             return lastRequest;
+        }
+
+        void setDefaultJsonBody(String responseBody) {
+            this.responseBody = responseBody.getBytes(StandardCharsets.UTF_8);
         }
 
         @Override

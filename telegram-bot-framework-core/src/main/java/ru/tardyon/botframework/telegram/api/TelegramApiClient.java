@@ -8,6 +8,8 @@ import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.ApproveChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.CopyMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.CopyMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessagesRequest;
@@ -43,15 +45,23 @@ import ru.tardyon.botframework.telegram.api.method.ConvertGiftToStarsRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.ForwardMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.ForwardMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.RevokeChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.PinChatMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.SendAnimationRequest;
+import ru.tardyon.botframework.telegram.api.method.SendAudioRequest;
 import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChatActionRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
+import ru.tardyon.botframework.telegram.api.method.SendPollRequest;
+import ru.tardyon.botframework.telegram.api.method.SendVideoRequest;
+import ru.tardyon.botframework.telegram.api.method.SetChatDescriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSettingsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
@@ -69,6 +79,7 @@ import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
 import ru.tardyon.botframework.telegram.api.model.Message;
+import ru.tardyon.botframework.telegram.api.model.MessageId;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.TelegramFile;
 import ru.tardyon.botframework.telegram.api.model.Update;
@@ -93,6 +104,22 @@ public interface TelegramApiClient {
     List<Update> getUpdates(GetUpdatesRequest request);
 
     Message sendMessage(SendMessageRequest request);
+
+    default Message forwardMessage(ForwardMessageRequest request) {
+        throw new UnsupportedOperationException("forwardMessage is not implemented by this TelegramApiClient");
+    }
+
+    default List<Message> forwardMessages(ForwardMessagesRequest request) {
+        throw new UnsupportedOperationException("forwardMessages is not implemented by this TelegramApiClient");
+    }
+
+    default MessageId copyMessage(CopyMessageRequest request) {
+        throw new UnsupportedOperationException("copyMessage is not implemented by this TelegramApiClient");
+    }
+
+    default List<MessageId> copyMessages(CopyMessagesRequest request) {
+        throw new UnsupportedOperationException("copyMessages is not implemented by this TelegramApiClient");
+    }
 
     EditMessageTextResult editMessageText(EditMessageTextRequest request);
 
@@ -229,6 +256,22 @@ public interface TelegramApiClient {
         throw new UnsupportedOperationException("sendChatAction is not implemented by this TelegramApiClient");
     }
 
+    default Message sendVideo(SendVideoRequest request) {
+        throw new UnsupportedOperationException("sendVideo is not implemented by this TelegramApiClient");
+    }
+
+    default Message sendAudio(SendAudioRequest request) {
+        throw new UnsupportedOperationException("sendAudio is not implemented by this TelegramApiClient");
+    }
+
+    default Message sendAnimation(SendAnimationRequest request) {
+        throw new UnsupportedOperationException("sendAnimation is not implemented by this TelegramApiClient");
+    }
+
+    default Message sendPoll(SendPollRequest request) {
+        throw new UnsupportedOperationException("sendPoll is not implemented by this TelegramApiClient");
+    }
+
     List<Message> sendMediaGroup(SendMediaGroupRequest request);
 
     default EditMessageResult editMessageCaption(EditMessageCaptionRequest request) {
@@ -245,6 +288,14 @@ public interface TelegramApiClient {
 
     default boolean declineChatJoinRequest(DeclineChatJoinRequestRequest request) {
         throw new UnsupportedOperationException("declineChatJoinRequest is not implemented by this TelegramApiClient");
+    }
+
+    default boolean pinChatMessage(PinChatMessageRequest request) {
+        throw new UnsupportedOperationException("pinChatMessage is not implemented by this TelegramApiClient");
+    }
+
+    default boolean setChatDescription(SetChatDescriptionRequest request) {
+        throw new UnsupportedOperationException("setChatDescription is not implemented by this TelegramApiClient");
     }
 
     String buildFileDownloadUrl(String filePath);
