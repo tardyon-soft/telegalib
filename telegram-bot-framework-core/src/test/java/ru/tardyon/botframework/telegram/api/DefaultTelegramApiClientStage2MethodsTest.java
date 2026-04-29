@@ -25,8 +25,16 @@ import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.ApproveChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteMyCommandsRequest;
+import ru.tardyon.botframework.telegram.api.method.DeclineChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.EditChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.EditMessageCaptionRequest;
+import ru.tardyon.botframework.telegram.api.method.EditMessageMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
@@ -47,9 +55,11 @@ import ru.tardyon.botframework.telegram.api.method.RepostStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
+import ru.tardyon.botframework.telegram.api.method.SendChatActionRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
+import ru.tardyon.botframework.telegram.api.method.RevokeChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
@@ -70,6 +80,7 @@ import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommandScopeDefault;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
+import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
 import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklist;
 import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklistTask;
 import ru.tardyon.botframework.telegram.api.model.inline.InlineQueryResult;
@@ -78,6 +89,7 @@ import ru.tardyon.botframework.telegram.api.model.inline.InputTextMessageContent
 import ru.tardyon.botframework.telegram.api.model.markup.Keyboards;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.menu.MenuButtons;
+import ru.tardyon.botframework.telegram.api.model.media.InputMediaPhoto;
 import ru.tardyon.botframework.telegram.api.model.chatmember.ChatMember;
 import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
 import ru.tardyon.botframework.telegram.api.model.payment.ShippingOption;
@@ -825,6 +837,103 @@ class DefaultTelegramApiClientStage2MethodsTest {
         assertEquals(2, result.activeUsernames().size());
         assertEquals(-1009876543210L, result.linkedChatId());
         assertTrue(result.canSendPaidMedia());
+    }
+
+    @Test
+    void editMessageCaptionUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":true}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        EditMessageResult result = client.editMessageCaption(EditMessageCaptionRequest.forChatMessage("@demo_channel", 11, "Updated"));
+
+        assertEquals("/bottoken/editMessageCaption", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":\"@demo_channel\""));
+        assertTrue(body.contains("\"message_id\":11"));
+        assertTrue(body.contains("\"caption\":\"Updated\""));
+        assertTrue(result.isSuccessful());
+    }
+
+    @Test
+    void editMessageMediaUsesExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":true}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        EditMessageResult result = client.editMessageMedia(
+            EditMessageMediaRequest.forChatMessage(100L, 12, InputMediaPhoto.of(InputFile.fileId("photo-file-id")))
+        );
+
+        assertEquals("/bottoken/editMessageMedia", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"chat_id\":100"));
+        assertTrue(body.contains("\"message_id\":12"));
+        assertTrue(body.contains("\"media\":{\"type\":\"photo\",\"media\":\"photo-file-id\""));
+        assertTrue(result.isSuccessful());
+    }
+
+    @Test
+    void utilityChatMethodsUseExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        assertTrue(client.deleteMessages(new DeleteMessagesRequest(100L, List.of(1, 2))));
+        assertEquals("/bottoken/deleteMessages", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"message_ids\":[1,2]"));
+
+        assertTrue(client.sendChatAction(new SendChatActionRequest(null, 100L, null, "typing")));
+        assertEquals("/bottoken/sendChatAction", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"action\":\"typing\""));
+
+        assertTrue(client.deleteMyCommands(new DeleteMyCommandsRequest(null, "ru")));
+        assertEquals("/bottoken/deleteMyCommands", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"language_code\":\"ru\""));
+    }
+
+    @Test
+    void inviteLinkMethodsUseExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"invite_link":"https://t.me/+abc","is_primary":false,"is_revoked":false}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        ChatInviteLink created = client.createChatInviteLink(new CreateChatInviteLinkRequest("@demo_channel", "demo", null, 10, null));
+        assertEquals("/bottoken/createChatInviteLink", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"member_limit\":10"));
+        assertEquals("https://t.me/+abc", created.inviteLink());
+
+        ChatInviteLink edited = client.editChatInviteLink(new EditChatInviteLinkRequest("@demo_channel", "https://t.me/+abc", "new", null, null, true));
+        assertEquals("/bottoken/editChatInviteLink", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"creates_join_request\":true"));
+        assertEquals("https://t.me/+abc", edited.inviteLink());
+
+        ChatInviteLink revoked = client.revokeChatInviteLink(new RevokeChatInviteLinkRequest("@demo_channel", "https://t.me/+abc"));
+        assertEquals("/bottoken/revokeChatInviteLink", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"invite_link\":\"https://t.me/+abc\""));
+        assertEquals("https://t.me/+abc", revoked.inviteLink());
+    }
+
+    @Test
+    void chatJoinRequestMethodsUseExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        assertTrue(client.approveChatJoinRequest(new ApproveChatJoinRequestRequest("@demo_channel", 42L)));
+        assertEquals("/bottoken/approveChatJoinRequest", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"user_id\":42"));
+
+        assertTrue(client.declineChatJoinRequest(new DeclineChatJoinRequestRequest("@demo_channel", 42L)));
+        assertEquals("/bottoken/declineChatJoinRequest", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"chat_id\":\"@demo_channel\""));
     }
 
     @Test

@@ -7,8 +7,16 @@ import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.ApproveChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
+import ru.tardyon.botframework.telegram.api.method.DeclineChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.EditChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.EditMessageCaptionRequest;
+import ru.tardyon.botframework.telegram.api.method.EditMessageMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
@@ -38,9 +46,11 @@ import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionReque
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
+import ru.tardyon.botframework.telegram.api.method.RevokeChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
+import ru.tardyon.botframework.telegram.api.method.SendChatActionRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSettingsRequest;
@@ -56,6 +66,7 @@ import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.UpgradeGiftRequest;
 import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
+import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
@@ -88,6 +99,10 @@ public interface TelegramApiClient {
     EditMessageReplyMarkupResult editMessageReplyMarkup(EditMessageReplyMarkupRequest request);
 
     boolean deleteMessage(DeleteMessageRequest request);
+
+    default boolean deleteMessages(DeleteMessagesRequest request) {
+        throw new UnsupportedOperationException("deleteMessages is not implemented by this TelegramApiClient");
+    }
 
     boolean answerCallbackQuery(AnswerCallbackQueryRequest request);
 
@@ -132,7 +147,19 @@ public interface TelegramApiClient {
 
     ChatInviteLink createChatSubscriptionInviteLink(CreateChatSubscriptionInviteLinkRequest request);
 
+    default ChatInviteLink createChatInviteLink(CreateChatInviteLinkRequest request) {
+        throw new UnsupportedOperationException("createChatInviteLink is not implemented by this TelegramApiClient");
+    }
+
     ChatInviteLink editChatSubscriptionInviteLink(EditChatSubscriptionInviteLinkRequest request);
+
+    default ChatInviteLink editChatInviteLink(EditChatInviteLinkRequest request) {
+        throw new UnsupportedOperationException("editChatInviteLink is not implemented by this TelegramApiClient");
+    }
+
+    default ChatInviteLink revokeChatInviteLink(RevokeChatInviteLinkRequest request) {
+        throw new UnsupportedOperationException("revokeChatInviteLink is not implemented by this TelegramApiClient");
+    }
 
     boolean setBusinessAccountGiftSettings(SetBusinessAccountGiftSettingsRequest request);
 
@@ -164,6 +191,10 @@ public interface TelegramApiClient {
 
     boolean setMyCommands(SetMyCommandsRequest request);
 
+    default boolean deleteMyCommands(DeleteMyCommandsRequest request) {
+        throw new UnsupportedOperationException("deleteMyCommands is not implemented by this TelegramApiClient");
+    }
+
     List<BotCommand> getMyCommands(GetMyCommandsRequest request);
 
     boolean setChatMenuButton(SetChatMenuButtonRequest request);
@@ -194,7 +225,27 @@ public interface TelegramApiClient {
         throw new UnsupportedOperationException("sendPhoto is not implemented by this TelegramApiClient");
     }
 
+    default boolean sendChatAction(SendChatActionRequest request) {
+        throw new UnsupportedOperationException("sendChatAction is not implemented by this TelegramApiClient");
+    }
+
     List<Message> sendMediaGroup(SendMediaGroupRequest request);
+
+    default EditMessageResult editMessageCaption(EditMessageCaptionRequest request) {
+        throw new UnsupportedOperationException("editMessageCaption is not implemented by this TelegramApiClient");
+    }
+
+    default EditMessageResult editMessageMedia(EditMessageMediaRequest request) {
+        throw new UnsupportedOperationException("editMessageMedia is not implemented by this TelegramApiClient");
+    }
+
+    default boolean approveChatJoinRequest(ApproveChatJoinRequestRequest request) {
+        throw new UnsupportedOperationException("approveChatJoinRequest is not implemented by this TelegramApiClient");
+    }
+
+    default boolean declineChatJoinRequest(DeclineChatJoinRequestRequest request) {
+        throw new UnsupportedOperationException("declineChatJoinRequest is not implemented by this TelegramApiClient");
+    }
 
     String buildFileDownloadUrl(String filePath);
 

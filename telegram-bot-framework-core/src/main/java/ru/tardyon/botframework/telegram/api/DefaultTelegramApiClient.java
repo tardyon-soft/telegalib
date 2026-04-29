@@ -24,11 +24,19 @@ import ru.tardyon.botframework.telegram.api.method.AnswerInlineQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
+import ru.tardyon.botframework.telegram.api.method.ApproveChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
+import ru.tardyon.botframework.telegram.api.method.DeclineChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.EditChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
+import ru.tardyon.botframework.telegram.api.method.EditMessageCaptionRequest;
+import ru.tardyon.botframework.telegram.api.method.EditMessageMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatRequest;
@@ -50,6 +58,7 @@ import ru.tardyon.botframework.telegram.api.method.EditStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
+import ru.tardyon.botframework.telegram.api.method.RevokeChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.ConvertGiftToStarsRequest;
@@ -58,6 +67,7 @@ import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionReques
 import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
+import ru.tardyon.botframework.telegram.api.method.SendChatActionRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSettingsRequest;
@@ -78,6 +88,7 @@ import ru.tardyon.botframework.telegram.api.file.InputFileReference;
 import ru.tardyon.botframework.telegram.api.file.InputFileStream;
 import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
+import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
 import ru.tardyon.botframework.telegram.api.model.Message;
@@ -180,6 +191,28 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     @Override
+    public EditMessageResult editMessageCaption(EditMessageCaptionRequest request) {
+        return invoke("editMessageCaption", requireRequest(request), objectMapper.getTypeFactory().constructType(EditMessageResult.class));
+    }
+
+    @Override
+    public EditMessageResult editMessageMedia(EditMessageMediaRequest request) {
+        EditMessageMediaRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
+        if (requiresMultipartUpload(actualRequest.media().media())) {
+            return editMessageMediaMultipart(actualRequest);
+        }
+        EditMessageMediaJsonPayload payload = new EditMessageMediaJsonPayload(
+            actualRequest.businessConnectionId(),
+            actualRequest.chatId(),
+            actualRequest.messageId(),
+            actualRequest.inlineMessageId(),
+            toMediaPayloadWithReference(actualRequest.media()),
+            actualRequest.replyMarkup()
+        );
+        return invoke("editMessageMedia", payload, objectMapper.getTypeFactory().constructType(EditMessageResult.class));
+    }
+
+    @Override
     public EditMessageReplyMarkupResult editMessageReplyMarkup(EditMessageReplyMarkupRequest request) {
         return invoke(
             "editMessageReplyMarkup",
@@ -191,6 +224,12 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     @Override
     public boolean deleteMessage(DeleteMessageRequest request) {
         Boolean result = invoke("deleteMessage", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean deleteMessages(DeleteMessagesRequest request) {
+        Boolean result = invoke("deleteMessages", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
     }
 
@@ -331,12 +370,27 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     @Override
+    public ChatInviteLink createChatInviteLink(CreateChatInviteLinkRequest request) {
+        return invoke("createChatInviteLink", requireRequest(request), objectMapper.getTypeFactory().constructType(ChatInviteLink.class));
+    }
+
+    @Override
     public ChatInviteLink editChatSubscriptionInviteLink(EditChatSubscriptionInviteLinkRequest request) {
         return invoke(
             "editChatSubscriptionInviteLink",
             requireRequest(request),
             objectMapper.getTypeFactory().constructType(ChatInviteLink.class)
         );
+    }
+
+    @Override
+    public ChatInviteLink editChatInviteLink(EditChatInviteLinkRequest request) {
+        return invoke("editChatInviteLink", requireRequest(request), objectMapper.getTypeFactory().constructType(ChatInviteLink.class));
+    }
+
+    @Override
+    public ChatInviteLink revokeChatInviteLink(RevokeChatInviteLinkRequest request) {
+        return invoke("revokeChatInviteLink", requireRequest(request), objectMapper.getTypeFactory().constructType(ChatInviteLink.class));
     }
 
     @Override
@@ -420,8 +474,27 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     @Override
+    public boolean approveChatJoinRequest(ApproveChatJoinRequestRequest request) {
+        Boolean result = invoke("approveChatJoinRequest", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean declineChatJoinRequest(DeclineChatJoinRequestRequest request) {
+        Boolean result = invoke("declineChatJoinRequest", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
     public boolean setMyCommands(SetMyCommandsRequest request) {
         Boolean result = invoke("setMyCommands", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean deleteMyCommands(DeleteMyCommandsRequest request) {
+        DeleteMyCommandsRequest actualRequest = request == null ? new DeleteMyCommandsRequest(null, null) : request;
+        Boolean result = invoke("deleteMyCommands", actualRequest, objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
     }
 
@@ -507,6 +580,12 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             return invoke("sendPhoto", jsonPayload, objectMapper.getTypeFactory().constructType(Message.class));
         }
         return sendPhotoMultipart(actualRequest, inputFile);
+    }
+
+    @Override
+    public boolean sendChatAction(SendChatActionRequest request) {
+        Boolean result = invoke("sendChatAction", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
     }
 
     @Override
@@ -770,6 +849,34 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             return invokeMultipart("sendPaidMedia", builtMultipart, objectMapper.getTypeFactory().constructType(Message.class));
         } catch (IOException e) {
             throw new TelegramApiException(null, "I/O error while preparing multipart sendPaidMedia request", null, e);
+        }
+    }
+
+    private EditMessageResult editMessageMediaMultipart(EditMessageMediaRequest request) {
+        try {
+            MultipartFormData multipart = new MultipartFormData();
+            if (request.businessConnectionId() != null) {
+                multipart.addField("business_connection_id", request.businessConnectionId());
+            }
+            if (request.chatId() != null) {
+                multipart.addField("chat_id", String.valueOf(request.chatId()));
+            }
+            if (request.messageId() != null) {
+                multipart.addField("message_id", String.valueOf(request.messageId()));
+            }
+            if (request.inlineMessageId() != null) {
+                multipart.addField("inline_message_id", request.inlineMessageId());
+            }
+            if (request.replyMarkup() != null) {
+                multipart.addField("reply_markup", objectMapper.writeValueAsString(request.replyMarkup()));
+            }
+            SendMediaGroupItemPayload mediaPayload = toMediaPayload(request.media(), multipart, new AtomicInteger(0));
+            multipart.addField("media", objectMapper.writeValueAsString(mediaPayload));
+
+            MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
+            return invokeMultipart("editMessageMedia", builtMultipart, objectMapper.getTypeFactory().constructType(EditMessageResult.class));
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while preparing multipart editMessageMedia request", null, e);
         }
     }
 
@@ -1123,6 +1230,16 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         @JsonProperty("chat_id") Object chatId,
         @JsonProperty("business_connection_id") String businessConnectionId,
         List<SendMediaGroupItemPayload> media
+    ) {
+    }
+
+    private record EditMessageMediaJsonPayload(
+        @JsonProperty("business_connection_id") String businessConnectionId,
+        @JsonProperty("chat_id") Object chatId,
+        @JsonProperty("message_id") Integer messageId,
+        @JsonProperty("inline_message_id") String inlineMessageId,
+        SendMediaGroupItemPayload media,
+        @JsonProperty("reply_markup") ReplyMarkup replyMarkup
     ) {
     }
 
