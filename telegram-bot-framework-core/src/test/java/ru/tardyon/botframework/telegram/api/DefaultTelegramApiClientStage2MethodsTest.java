@@ -26,9 +26,11 @@ import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.ApproveChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.BanChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteChatPhotoRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessagesRequest;
@@ -69,6 +71,8 @@ import ru.tardyon.botframework.telegram.api.method.ReadBusinessMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.RevokeChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.PinChatMessageRequest;
+import ru.tardyon.botframework.telegram.api.method.PromoteChatMemberRequest;
+import ru.tardyon.botframework.telegram.api.method.RestrictChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
@@ -78,10 +82,16 @@ import ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSetting
 import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.TransferBusinessAccountStarsRequest;
 import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
+import ru.tardyon.botframework.telegram.api.method.UnbanChatMemberRequest;
+import ru.tardyon.botframework.telegram.api.method.UnpinAllChatMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.UnpinChatMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.UpgradeGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatDescriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.SetChatPermissionsRequest;
+import ru.tardyon.botframework.telegram.api.method.SetChatPhotoRequest;
+import ru.tardyon.botframework.telegram.api.method.SetChatTitleRequest;
 import ru.tardyon.botframework.telegram.api.method.SetWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.SendDocumentRequest;
 import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
@@ -90,6 +100,7 @@ import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommandScopeDefault;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
+import ru.tardyon.botframework.telegram.api.model.ChatPermissions;
 import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.MessageId;
@@ -1015,6 +1026,50 @@ class DefaultTelegramApiClientStage2MethodsTest {
 
         assertTrue(client.setChatDescription(new SetChatDescriptionRequest("@demo_channel", "Description")));
         assertEquals("/bottoken/setChatDescription", httpClient.lastRequest().uri().getPath());
+    }
+
+    @Test
+    void chatAdministrationMethodsUseExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+        ChatPermissions permissions = new ChatPermissions(true, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+
+        assertTrue(client.unpinChatMessage(new UnpinChatMessageRequest(null, "@demo_channel", 10)));
+        assertEquals("/bottoken/unpinChatMessage", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"message_id\":10"));
+
+        assertTrue(client.unpinAllChatMessages(new UnpinAllChatMessagesRequest("@demo_channel")));
+        assertEquals("/bottoken/unpinAllChatMessages", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.setChatTitle(new SetChatTitleRequest("@demo_channel", "New title")));
+        assertEquals("/bottoken/setChatTitle", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"title\":\"New title\""));
+
+        assertTrue(client.setChatPhoto(new SetChatPhotoRequest("@demo_channel", InputFile.fileId("photo-id"))));
+        assertEquals("/bottoken/setChatPhoto", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"photo\":\"photo-id\""));
+
+        assertTrue(client.deleteChatPhoto(new DeleteChatPhotoRequest("@demo_channel")));
+        assertEquals("/bottoken/deleteChatPhoto", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.banChatMember(new BanChatMemberRequest("@demo_channel", 42L, null, true)));
+        assertEquals("/bottoken/banChatMember", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"revoke_messages\":true"));
+
+        assertTrue(client.unbanChatMember(new UnbanChatMemberRequest("@demo_channel", 42L, true)));
+        assertEquals("/bottoken/unbanChatMember", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.restrictChatMember(new RestrictChatMemberRequest("@demo_channel", 42L, permissions, true, null)));
+        assertEquals("/bottoken/restrictChatMember", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"can_send_messages\":true"));
+
+        assertTrue(client.promoteChatMember(new PromoteChatMemberRequest("@demo_channel", 42L, null, true, true, null, null, null, null, null, null, null, null, true, null, null, null, null, null)));
+        assertEquals("/bottoken/promoteChatMember", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"can_manage_chat\":true"));
+
+        assertTrue(client.setChatPermissions(new SetChatPermissionsRequest("@demo_channel", permissions, true)));
+        assertEquals("/bottoken/setChatPermissions", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"use_independent_chat_permissions\":true"));
     }
 
     @Test

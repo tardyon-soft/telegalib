@@ -25,10 +25,12 @@ import ru.tardyon.botframework.telegram.api.method.AnswerPreCheckoutQueryRequest
 import ru.tardyon.botframework.telegram.api.method.AnswerShippingQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.AnswerWebAppQueryRequest;
 import ru.tardyon.botframework.telegram.api.method.ApproveChatJoinRequestRequest;
+import ru.tardyon.botframework.telegram.api.method.BanChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.DeleteChatPhotoRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMyCommandsRequest;
@@ -71,6 +73,8 @@ import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionReques
 import ru.tardyon.botframework.telegram.api.method.PinChatMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.SendAnimationRequest;
 import ru.tardyon.botframework.telegram.api.method.SendAudioRequest;
+import ru.tardyon.botframework.telegram.api.method.PromoteChatMemberRequest;
+import ru.tardyon.botframework.telegram.api.method.RestrictChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.SendGiftRequest;
 import ru.tardyon.botframework.telegram.api.method.SendInvoiceRequest;
 import ru.tardyon.botframework.telegram.api.method.SendChecklistRequest;
@@ -79,6 +83,9 @@ import ru.tardyon.botframework.telegram.api.method.SendPaidMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.SendPollRequest;
 import ru.tardyon.botframework.telegram.api.method.SendVideoRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatDescriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.SetChatPermissionsRequest;
+import ru.tardyon.botframework.telegram.api.method.SetChatPhotoRequest;
+import ru.tardyon.botframework.telegram.api.method.SetChatTitleRequest;
 import ru.tardyon.botframework.telegram.api.method.SetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.SetBusinessAccountGiftSettingsRequest;
 import ru.tardyon.botframework.telegram.api.method.SetMyCommandsRequest;
@@ -90,6 +97,9 @@ import ru.tardyon.botframework.telegram.api.method.SendPhotoRequest;
 import ru.tardyon.botframework.telegram.api.method.SavePreparedInlineMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.TransferBusinessAccountStarsRequest;
 import ru.tardyon.botframework.telegram.api.method.TransferGiftRequest;
+import ru.tardyon.botframework.telegram.api.method.UnbanChatMemberRequest;
+import ru.tardyon.botframework.telegram.api.method.UnpinAllChatMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.UnpinChatMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.UpgradeGiftRequest;
 import ru.tardyon.botframework.telegram.api.file.InputFile;
 import ru.tardyon.botframework.telegram.api.file.InputFileBytes;
@@ -525,8 +535,73 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     @Override
+    public boolean unpinChatMessage(UnpinChatMessageRequest request) {
+        Boolean result = invoke("unpinChatMessage", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean unpinAllChatMessages(UnpinAllChatMessagesRequest request) {
+        Boolean result = invoke("unpinAllChatMessages", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
     public boolean setChatDescription(SetChatDescriptionRequest request) {
         Boolean result = invoke("setChatDescription", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean setChatTitle(SetChatTitleRequest request) {
+        Boolean result = invoke("setChatTitle", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean setChatPhoto(SetChatPhotoRequest request) {
+        SetChatPhotoRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
+        String photoReference = tryResolveStringReference(actualRequest.photo());
+        if (photoReference != null) {
+            Boolean result = invoke("setChatPhoto", new SetChatPhotoJsonPayload(actualRequest.chatId(), photoReference), objectMapper.getTypeFactory().constructType(Boolean.class));
+            return Boolean.TRUE.equals(result);
+        }
+        return setChatPhotoMultipart(actualRequest);
+    }
+
+    @Override
+    public boolean deleteChatPhoto(DeleteChatPhotoRequest request) {
+        Boolean result = invoke("deleteChatPhoto", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean banChatMember(BanChatMemberRequest request) {
+        Boolean result = invoke("banChatMember", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean unbanChatMember(UnbanChatMemberRequest request) {
+        Boolean result = invoke("unbanChatMember", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean restrictChatMember(RestrictChatMemberRequest request) {
+        Boolean result = invoke("restrictChatMember", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean promoteChatMember(PromoteChatMemberRequest request) {
+        Boolean result = invoke("promoteChatMember", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean setChatPermissions(SetChatPermissionsRequest request) {
+        Boolean result = invoke("setChatPermissions", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
     }
 
@@ -897,6 +972,19 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             return invokeMultipart(methodName, builtMultipart, objectMapper.getTypeFactory().constructType(Message.class));
         } catch (IOException e) {
             throw new TelegramApiException(null, "I/O error while preparing multipart " + methodName + " request", null, e);
+        }
+    }
+
+    private boolean setChatPhotoMultipart(SetChatPhotoRequest request) {
+        try {
+            MultipartFormData multipart = new MultipartFormData()
+                .addField("chat_id", String.valueOf(request.chatId()));
+            addInputFilePart(multipart, "photo", request.photo(), "photo");
+            MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
+            Boolean result = invokeMultipart("setChatPhoto", builtMultipart, objectMapper.getTypeFactory().constructType(Boolean.class));
+            return Boolean.TRUE.equals(result);
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while preparing multipart setChatPhoto request", null, e);
         }
     }
 
@@ -1343,6 +1431,12 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         String animation,
         String caption,
         @JsonProperty("reply_markup") ReplyMarkup replyMarkup
+    ) {
+    }
+
+    private record SetChatPhotoJsonPayload(
+        @JsonProperty("chat_id") Object chatId,
+        String photo
     ) {
     }
 
