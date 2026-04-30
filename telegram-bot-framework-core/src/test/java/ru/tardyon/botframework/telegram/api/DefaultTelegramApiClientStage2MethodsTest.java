@@ -30,6 +30,7 @@ import ru.tardyon.botframework.telegram.api.method.BanChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteChatPhotoRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
@@ -37,6 +38,8 @@ import ru.tardyon.botframework.telegram.api.method.DeleteMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.DeclineChatJoinRequestRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.EditForumTopicRequest;
+import ru.tardyon.botframework.telegram.api.method.EditGeneralForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageCaptionRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
@@ -45,6 +48,7 @@ import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLin
 import ru.tardyon.botframework.telegram.api.method.EditStoryRequest;
 import ru.tardyon.botframework.telegram.api.method.ForwardMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.ForwardMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.ForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
@@ -75,6 +79,7 @@ import ru.tardyon.botframework.telegram.api.method.PromoteChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.RestrictChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.GeneralForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.ConvertGiftToStarsRequest;
 import ru.tardyon.botframework.telegram.api.method.GetBusinessAccountGiftsRequest;
@@ -102,6 +107,7 @@ import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
 import ru.tardyon.botframework.telegram.api.model.ChatPermissions;
 import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
+import ru.tardyon.botframework.telegram.api.model.ForumTopic;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.MessageId;
 import ru.tardyon.botframework.telegram.api.model.checklist.InputChecklist;
@@ -1070,6 +1076,50 @@ class DefaultTelegramApiClientStage2MethodsTest {
         assertTrue(client.setChatPermissions(new SetChatPermissionsRequest("@demo_channel", permissions, true)));
         assertEquals("/bottoken/setChatPermissions", httpClient.lastRequest().uri().getPath());
         assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"use_independent_chat_permissions\":true"));
+    }
+
+    @Test
+    void forumTopicMethodsUseExpectedMethodAndPayload() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"message_thread_id":77,"name":"Topic","icon_color":7322096}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        ForumTopic topic = client.createForumTopic(new CreateForumTopicRequest("@forum", "Topic", 7322096, null));
+        assertEquals("/bottoken/createForumTopic", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"name\":\"Topic\""));
+        assertEquals(77, topic.messageThreadId());
+
+        httpClient.setDefaultJsonBody(okTrueResponse());
+        assertTrue(client.editForumTopic(new EditForumTopicRequest("@forum", 77, "Renamed", null)));
+        assertEquals("/bottoken/editForumTopic", httpClient.lastRequest().uri().getPath());
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"message_thread_id\":77"));
+
+        assertTrue(client.closeForumTopic(new ForumTopicRequest("@forum", 77)));
+        assertEquals("/bottoken/closeForumTopic", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.reopenForumTopic(new ForumTopicRequest("@forum", 77)));
+        assertEquals("/bottoken/reopenForumTopic", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.deleteForumTopic(new ForumTopicRequest("@forum", 77)));
+        assertEquals("/bottoken/deleteForumTopic", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.unpinAllForumTopicMessages(new ForumTopicRequest("@forum", 77)));
+        assertEquals("/bottoken/unpinAllForumTopicMessages", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.editGeneralForumTopic(new EditGeneralForumTopicRequest("@forum", "General")));
+        assertEquals("/bottoken/editGeneralForumTopic", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.closeGeneralForumTopic(new GeneralForumTopicRequest("@forum")));
+        assertEquals("/bottoken/closeGeneralForumTopic", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.reopenGeneralForumTopic(new GeneralForumTopicRequest("@forum")));
+        assertEquals("/bottoken/reopenGeneralForumTopic", httpClient.lastRequest().uri().getPath());
+
+        assertTrue(client.unpinAllGeneralForumTopicMessages(new GeneralForumTopicRequest("@forum")));
+        assertEquals("/bottoken/unpinAllGeneralForumTopicMessages", httpClient.lastRequest().uri().getPath());
     }
 
     @Test

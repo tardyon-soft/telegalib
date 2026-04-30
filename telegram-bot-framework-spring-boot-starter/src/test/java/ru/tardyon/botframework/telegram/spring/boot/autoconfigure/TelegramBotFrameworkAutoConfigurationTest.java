@@ -2,6 +2,9 @@ package ru.tardyon.botframework.telegram.spring.boot.autoconfigure;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.net.Proxy;
+import java.net.URI;
+import java.net.http.HttpClient;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -215,6 +218,60 @@ class TelegramBotFrameworkAutoConfigurationTest {
     }
 
     @Test
+    void createsHttpClientWithConfiguredSocksProxyAndAuthenticator() {
+        contextRunner
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false",
+                "telegram.bot.proxy.enabled=true",
+                "telegram.bot.proxy.type=socks5",
+                "telegram.bot.proxy.host=127.0.0.1",
+                "telegram.bot.proxy.port=1080",
+                "telegram.bot.proxy.username=user",
+                "telegram.bot.proxy.password=secret"
+            )
+            .run(context -> {
+                HttpClient httpClient = context.getBean(HttpClient.class);
+                assertThat(httpClient.proxy()).isPresent();
+                assertThat(httpClient.proxy().orElseThrow().select(URI.create("https://api.telegram.org")).getFirst().type())
+                    .isEqualTo(Proxy.Type.SOCKS);
+                assertThat(httpClient.authenticator()).isPresent();
+            });
+    }
+
+    @Test
+    void keepsTelegramHttpClientSeparateFromApplicationHttpClient() {
+        contextRunner
+            .withUserConfiguration(ApplicationHttpClientConfiguration.class)
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false"
+            )
+            .run(context -> {
+                assertThat(context).hasBean("applicationHttpClient");
+                assertThat(context).hasBean("telegramHttpClient");
+                assertThat(context.getBean("applicationHttpClient", HttpClient.class))
+                    .isNotSameAs(context.getBean("telegramHttpClient", HttpClient.class));
+                assertThat(context).hasSingleBean(TelegramApiClient.class);
+            });
+    }
+
+    @Test
+    void failsFastWhenProxyEnabledWithoutHost() {
+        contextRunner
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false",
+                "telegram.bot.proxy.enabled=true",
+                "telegram.bot.proxy.port=1080"
+            )
+            .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
     void disablesDiagnosticsHooksWhenConfigured() {
         contextRunner
             .withPropertyValues(
@@ -267,6 +324,14 @@ class TelegramBotFrameworkAutoConfigurationTest {
         BotApiRequestListener testRequestListener() {
             return event -> {
             };
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class ApplicationHttpClientConfiguration {
+        @Bean
+        HttpClient applicationHttpClient() {
+            return HttpClient.newHttpClient();
         }
     }
 

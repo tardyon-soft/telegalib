@@ -1,6 +1,14 @@
 package ru.tardyon.botframework.telegram.spring.boot.autoconfigure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.net.Authenticator;
+import java.net.InetSocketAddress;
+import java.net.PasswordAuthentication;
+import java.net.Proxy;
+import java.net.ProxySelector;
+import java.net.SocketAddress;
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.function.Consumer;
@@ -12,6 +20,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.ListableBeanFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.util.StringUtils;
@@ -62,10 +71,18 @@ import ru.tardyon.botframework.telegram.webapp.WebAppInitDataValidator;
 @EnableConfigurationProperties(TelegramBotFrameworkProperties.class)
 public class TelegramBotFrameworkAutoConfiguration {
 
-    @Bean
-    @ConditionalOnMissingBean
-    public HttpClient telegramHttpClient() {
-        return HttpClient.newHttpClient();
+    @Bean("telegramHttpClient")
+    @ConditionalOnMissingBean(name = "telegramHttpClient")
+    public HttpClient telegramHttpClient(TelegramBotFrameworkProperties properties) {
+        HttpClient.Builder builder = HttpClient.newBuilder();
+        TelegramBotFrameworkProperties.ProxySettings proxy = properties.getProxy();
+        if (proxy.isEnabled()) {
+            builder.proxy(proxySelector(proxy));
+            if (proxy.hasCredentials()) {
+                builder.authenticator(proxyAuthenticator(proxy));
+            }
+        }
+        return builder.build();
     }
 
     @Bean
@@ -122,7 +139,7 @@ public class TelegramBotFrameworkAutoConfiguration {
     public TelegramApiClient telegramApiClient(
         TelegramBotFrameworkProperties properties,
         BotApiTransportProfile botApiTransportProfile,
-        HttpClient telegramHttpClient,
+        @Qualifier("telegramHttpClient") HttpClient telegramHttpClient,
         ObjectMapper telegramObjectMapper,
         DiagnosticsHooks diagnosticsHooks
     ) {
@@ -364,10 +381,66 @@ public class TelegramBotFrameworkAutoConfiguration {
         return telegramApiClient.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(telegramApiClient));
     }
 
+    private static ProxySelector proxySelector(TelegramBotFrameworkProperties.ProxySettings proxy) {
+        if (!StringUtils.hasText(proxy.getHost())) {
+            throw new IllegalStateException("telegram.bot.proxy.host must be configured when proxy is enabled");
+        }
+        if (proxy.getPort() <= 0 || proxy.getPort() > 65_535) {
+            throw new IllegalStateException("telegram.bot.proxy.port must be in range 1..65535 when proxy is enabled");
+        }
+        Proxy.Type type = proxy.getType() == TelegramBotFrameworkProperties.ProxyType.SOCKS5
+            ? Proxy.Type.SOCKS
+            : Proxy.Type.HTTP;
+        return new FixedProxySelector(type, proxy.getHost().trim(), proxy.getPort());
+    }
+
+    private static Authenticator proxyAuthenticator(TelegramBotFrameworkProperties.ProxySettings proxy) {
+        if (!StringUtils.hasText(proxy.getUsername())) {
+            throw new IllegalStateException("telegram.bot.proxy.username must be configured when proxy credentials are enabled");
+        }
+        String password = proxy.getPassword() == null ? "" : proxy.getPassword();
+        return new FixedProxyAuthenticator(proxy.getUsername(), password);
+    }
+
     private static Consumer<Throwable> defaultPollingErrorHandler() {
         return throwable -> {
             System.err.println("LongPollingRunner error: " + throwable.getMessage());
             throwable.printStackTrace(System.err);
         };
+    }
+
+    private static final class FixedProxySelector extends ProxySelector {
+
+        private final Proxy proxy;
+
+        private FixedProxySelector(Proxy.Type type, String host, int port) {
+            this.proxy = new Proxy(type, new InetSocketAddress(host, port));
+        }
+
+        @Override
+        public List<Proxy> select(URI uri) {
+            return List.of(proxy);
+        }
+
+        @Override
+        public void connectFailed(URI uri, SocketAddress sa, IOException ioe) {
+            // HttpClient surfaces request failures to the caller.
+        }
+    }
+
+    private static final class FixedProxyAuthenticator extends Authenticator {
+
+        private final String username;
+        private final char[] password;
+
+        private FixedProxyAuthenticator(String username, String password) {
+            this.username = username;
+            this.password = password.toCharArray();
+        }
+
+        @Override
+        protected PasswordAuthentication getPasswordAuthentication() {
+            return new PasswordAuthentication(username, password.clone());
+        }
     }
 }

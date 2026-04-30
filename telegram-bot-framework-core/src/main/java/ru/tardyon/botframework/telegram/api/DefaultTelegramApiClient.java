@@ -29,6 +29,7 @@ import ru.tardyon.botframework.telegram.api.method.BanChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteBusinessMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteChatPhotoRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
@@ -37,6 +38,8 @@ import ru.tardyon.botframework.telegram.api.method.DeleteMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.DeclineChatJoinRequestRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.EditForumTopicRequest;
+import ru.tardyon.botframework.telegram.api.method.EditGeneralForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageChecklistRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageCaptionRequest;
@@ -44,6 +47,7 @@ import ru.tardyon.botframework.telegram.api.method.EditMessageMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageTextRequest;
 import ru.tardyon.botframework.telegram.api.method.ForwardMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.ForwardMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.ForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMenuButtonRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatRequest;
 import ru.tardyon.botframework.telegram.api.method.GetChatMemberRequest;
@@ -70,6 +74,7 @@ import ru.tardyon.botframework.telegram.api.method.CreateChatSubscriptionInviteL
 import ru.tardyon.botframework.telegram.api.method.ConvertGiftToStarsRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLinkRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.GeneralForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.PinChatMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.SendAnimationRequest;
 import ru.tardyon.botframework.telegram.api.method.SendAudioRequest;
@@ -111,6 +116,7 @@ import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
+import ru.tardyon.botframework.telegram.api.model.ForumTopic;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.MessageId;
 import ru.tardyon.botframework.telegram.api.model.TelegramFile;
@@ -602,6 +608,65 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     @Override
     public boolean setChatPermissions(SetChatPermissionsRequest request) {
         Boolean result = invoke("setChatPermissions", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public ForumTopic createForumTopic(CreateForumTopicRequest request) {
+        return invoke("createForumTopic", requireRequest(request), objectMapper.getTypeFactory().constructType(ForumTopic.class));
+    }
+
+    @Override
+    public boolean editForumTopic(EditForumTopicRequest request) {
+        Boolean result = invoke("editForumTopic", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean closeForumTopic(ForumTopicRequest request) {
+        Boolean result = invoke("closeForumTopic", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean reopenForumTopic(ForumTopicRequest request) {
+        Boolean result = invoke("reopenForumTopic", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean deleteForumTopic(ForumTopicRequest request) {
+        Boolean result = invoke("deleteForumTopic", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean unpinAllForumTopicMessages(ForumTopicRequest request) {
+        Boolean result = invoke("unpinAllForumTopicMessages", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean editGeneralForumTopic(EditGeneralForumTopicRequest request) {
+        Boolean result = invoke("editGeneralForumTopic", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean closeGeneralForumTopic(GeneralForumTopicRequest request) {
+        Boolean result = invoke("closeGeneralForumTopic", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean reopenGeneralForumTopic(GeneralForumTopicRequest request) {
+        Boolean result = invoke("reopenGeneralForumTopic", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
+        return Boolean.TRUE.equals(result);
+    }
+
+    @Override
+    public boolean unpinAllGeneralForumTopicMessages(GeneralForumTopicRequest request) {
+        Boolean result = invoke("unpinAllGeneralForumTopicMessages", requireRequest(request), objectMapper.getTypeFactory().constructType(Boolean.class));
         return Boolean.TRUE.equals(result);
     }
 

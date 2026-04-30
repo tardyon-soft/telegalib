@@ -61,6 +61,20 @@ telegram:
       local-file-uri-upload-enabled: true
 ```
 
+## Bot API proxy
+
+```yaml
+telegram:
+  bot:
+    proxy:
+      enabled: true
+      type: socks5 # or http
+      host: 127.0.0.1
+      port: 1080
+      username: ${PROXY_USER:}
+      password: ${PROXY_PASSWORD:}
+```
+
 ## FSM state storage (memory/redis)
 
 Default is in-memory:

@@ -15,6 +15,7 @@ public class TelegramBotFrameworkProperties {
     private final Webhook webhook = new Webhook();
     private final WebApp webApp = new WebApp();
     private final Transport transport = new Transport();
+    private final ProxySettings proxy = new ProxySettings();
     private final Diagnostics diagnostics = new Diagnostics();
     private final StateSettings state = new StateSettings();
     private final ScreenStateSettings screenState = new ScreenStateSettings();
@@ -27,6 +28,11 @@ public class TelegramBotFrameworkProperties {
     public enum StateStorageType {
         MEMORY,
         REDIS
+    }
+
+    public enum ProxyType {
+        HTTP,
+        SOCKS5
     }
 
     public String getToken() {
@@ -59,6 +65,10 @@ public class TelegramBotFrameworkProperties {
 
     public Transport getTransport() {
         return transport;
+    }
+
+    public ProxySettings getProxy() {
+        return proxy;
     }
 
     public Diagnostics getDiagnostics() {
@@ -244,6 +254,68 @@ public class TelegramBotFrameworkProperties {
                 return "http://127.0.0.1:8081";
             }
             return BotApiTransportProfile.DEFAULT_CLOUD_BASE_URL;
+        }
+    }
+
+    public static class ProxySettings {
+
+        private boolean enabled;
+        private ProxyType type = ProxyType.HTTP;
+        private String host;
+        private int port;
+        private String username;
+        private String password;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public ProxyType getType() {
+            return type;
+        }
+
+        public void setType(ProxyType type) {
+            this.type = type;
+        }
+
+        public String getHost() {
+            return host;
+        }
+
+        public void setHost(String host) {
+            this.host = host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public void setPort(int port) {
+            this.port = port;
+        }
+
+        public String getUsername() {
+            return username;
+        }
+
+        public void setUsername(String username) {
+            this.username = username;
+        }
+
+        public String getPassword() {
+            return password;
+        }
+
+        public void setPassword(String password) {
+            this.password = password;
+        }
+
+        public boolean hasCredentials() {
+            return StringUtils.hasText(username) || StringUtils.hasText(password);
         }
     }
 

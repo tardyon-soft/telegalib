@@ -12,12 +12,15 @@ import ru.tardyon.botframework.telegram.api.method.BanChatMemberRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.CopyMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.CreateChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.CreateForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMessagesRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteMyCommandsRequest;
 import ru.tardyon.botframework.telegram.api.method.DeleteWebhookRequest;
 import ru.tardyon.botframework.telegram.api.method.DeclineChatJoinRequestRequest;
 import ru.tardyon.botframework.telegram.api.method.EditChatInviteLinkRequest;
+import ru.tardyon.botframework.telegram.api.method.EditForumTopicRequest;
+import ru.tardyon.botframework.telegram.api.method.EditGeneralForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageCaptionRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageMediaRequest;
 import ru.tardyon.botframework.telegram.api.method.EditMessageReplyMarkupRequest;
@@ -49,7 +52,9 @@ import ru.tardyon.botframework.telegram.api.method.EditChatSubscriptionInviteLin
 import ru.tardyon.botframework.telegram.api.method.EditUserStarSubscriptionRequest;
 import ru.tardyon.botframework.telegram.api.method.ForwardMessageRequest;
 import ru.tardyon.botframework.telegram.api.method.ForwardMessagesRequest;
+import ru.tardyon.botframework.telegram.api.method.ForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.GiftPremiumSubscriptionRequest;
+import ru.tardyon.botframework.telegram.api.method.GeneralForumTopicRequest;
 import ru.tardyon.botframework.telegram.api.method.GetStarTransactionsRequest;
 import ru.tardyon.botframework.telegram.api.method.RefundStarPaymentRequest;
 import ru.tardyon.botframework.telegram.api.method.RevokeChatInviteLinkRequest;
@@ -88,6 +93,7 @@ import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageReplyMarkupResult;
 import ru.tardyon.botframework.telegram.api.model.EditMessageResult;
 import ru.tardyon.botframework.telegram.api.model.ChatFullInfo;
+import ru.tardyon.botframework.telegram.api.model.ForumTopic;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.MessageId;
 import ru.tardyon.botframework.telegram.api.model.ChatInviteLink;
@@ -346,6 +352,46 @@ public interface TelegramApiClient {
 
     default boolean setChatPermissions(SetChatPermissionsRequest request) {
         throw new UnsupportedOperationException("setChatPermissions is not implemented by this TelegramApiClient");
+    }
+
+    default ForumTopic createForumTopic(CreateForumTopicRequest request) {
+        throw new UnsupportedOperationException("createForumTopic is not implemented by this TelegramApiClient");
+    }
+
+    default boolean editForumTopic(EditForumTopicRequest request) {
+        throw new UnsupportedOperationException("editForumTopic is not implemented by this TelegramApiClient");
+    }
+
+    default boolean closeForumTopic(ForumTopicRequest request) {
+        throw new UnsupportedOperationException("closeForumTopic is not implemented by this TelegramApiClient");
+    }
+
+    default boolean reopenForumTopic(ForumTopicRequest request) {
+        throw new UnsupportedOperationException("reopenForumTopic is not implemented by this TelegramApiClient");
+    }
+
+    default boolean deleteForumTopic(ForumTopicRequest request) {
+        throw new UnsupportedOperationException("deleteForumTopic is not implemented by this TelegramApiClient");
+    }
+
+    default boolean unpinAllForumTopicMessages(ForumTopicRequest request) {
+        throw new UnsupportedOperationException("unpinAllForumTopicMessages is not implemented by this TelegramApiClient");
+    }
+
+    default boolean editGeneralForumTopic(EditGeneralForumTopicRequest request) {
+        throw new UnsupportedOperationException("editGeneralForumTopic is not implemented by this TelegramApiClient");
+    }
+
+    default boolean closeGeneralForumTopic(GeneralForumTopicRequest request) {
+        throw new UnsupportedOperationException("closeGeneralForumTopic is not implemented by this TelegramApiClient");
+    }
+
+    default boolean reopenGeneralForumTopic(GeneralForumTopicRequest request) {
+        throw new UnsupportedOperationException("reopenGeneralForumTopic is not implemented by this TelegramApiClient");
+    }
+
+    default boolean unpinAllGeneralForumTopicMessages(GeneralForumTopicRequest request) {
+        throw new UnsupportedOperationException("unpinAllGeneralForumTopicMessages is not implemented by this TelegramApiClient");
     }
 
     String buildFileDownloadUrl(String filePath);
