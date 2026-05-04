@@ -699,11 +699,12 @@ class DefaultTelegramApiClientStage2MethodsTest {
         );
         DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
 
-        client.sendMessage(new SendMessageRequest(123L, "hello", null, "bc-1"));
+        client.sendMessage(new SendMessageRequest(123L, "<b>hello</b>", null, "bc-1", "HTML"));
 
         assertEquals("/bottoken/sendMessage", httpClient.lastRequest().uri().getPath());
         String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
         assertTrue(body.contains("\"business_connection_id\":\"bc-1\""));
+        assertTrue(body.contains("\"parse_mode\":\"HTML\""));
     }
 
     @Test
@@ -1032,6 +1033,39 @@ class DefaultTelegramApiClientStage2MethodsTest {
 
         assertTrue(client.setChatDescription(new SetChatDescriptionRequest("@demo_channel", "Description")));
         assertEquals("/bottoken/setChatDescription", httpClient.lastRequest().uri().getPath());
+    }
+
+    @Test
+    void sendPhotoUsesExpectedMethodAndPayloadForFileIdAndUrl() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"message_id":10,"date":1,"chat":{"id":100,"type":"private"}}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        client.sendPhoto(new ru.tardyon.botframework.telegram.api.method.SendPhotoRequest(
+            100L,
+            InputFile.fileId("photo-file-id"),
+            "<b>caption</b>",
+            "HTML",
+            null
+        ));
+        assertEquals("/bottoken/sendPhoto", httpClient.lastRequest().uri().getPath());
+        String fileIdBody = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(fileIdBody.contains("\"photo\":\"photo-file-id\""));
+        assertTrue(fileIdBody.contains("\"caption\":\"<b>caption</b>\""));
+        assertTrue(fileIdBody.contains("\"parse_mode\":\"HTML\""));
+
+        client.sendPhoto(new ru.tardyon.botframework.telegram.api.method.SendPhotoRequest(
+            100L,
+            InputFile.url("https://example.com/photo.jpg"),
+            null,
+            null
+        ));
+        assertEquals("/bottoken/sendPhoto", httpClient.lastRequest().uri().getPath());
+        String urlBody = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(urlBody.contains("\"photo\":\"https://example.com/photo.jpg\""));
     }
 
     @Test

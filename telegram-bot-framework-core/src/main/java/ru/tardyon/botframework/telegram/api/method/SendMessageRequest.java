@@ -8,11 +8,16 @@ public record SendMessageRequest(
     @JsonProperty("chat_id") Object chatId,
     String text,
     @JsonProperty("reply_markup") ReplyMarkup replyMarkup,
-    @JsonProperty("business_connection_id") String businessConnectionId
+    @JsonProperty("business_connection_id") String businessConnectionId,
+    @JsonProperty("parse_mode") String parseMode
 ) {
     public SendMessageRequest {
         Objects.requireNonNull(chatId, "chatId must not be null");
         Objects.requireNonNull(text, "text must not be null");
+    }
+
+    public SendMessageRequest(Object chatId, String text, ReplyMarkup replyMarkup, String businessConnectionId) {
+        this(chatId, text, replyMarkup, businessConnectionId, null);
     }
 
     public static SendMessageRequest of(long chatId, String text) {

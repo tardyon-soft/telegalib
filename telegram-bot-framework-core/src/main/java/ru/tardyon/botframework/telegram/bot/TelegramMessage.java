@@ -38,7 +38,13 @@ public final class TelegramMessage {
 
     public Message reply(SendMessageRequest request) {
         Objects.requireNonNull(request, "request must not be null");
-        return requireApiClient().sendMessage(new SendMessageRequest(requireChatId(), request.text(), request.replyMarkup(), request.businessConnectionId()));
+        return requireApiClient().sendMessage(new SendMessageRequest(
+            requireChatId(),
+            request.text(),
+            request.replyMarkup(),
+            request.businessConnectionId(),
+            request.parseMode()
+        ));
     }
 
     public EditMessageTextResult editText(String text) {

@@ -36,6 +36,7 @@ public final class DefaultTelegramScreenViewRenderer implements ScreenViewRender
                     chatId,
                     view.photo(),
                     normalizeCaption(view.text()),
+                    view.parseMode(),
                     view.replyMarkup()
                 ));
                 if (sentPhoto != null && sentPhoto.messageId() != null) {
@@ -43,7 +44,7 @@ public final class DefaultTelegramScreenViewRenderer implements ScreenViewRender
                     screenStateContext.setRenderedMessageKind(ScreenStack.RenderedMessageKind.PHOTO);
                 }
             } catch (TelegramApiException ex) {
-                Message fallback = apiClient.sendMessage(new SendMessageRequest(chatId, view.text(), view.replyMarkup(), null));
+                Message fallback = apiClient.sendMessage(new SendMessageRequest(chatId, view.text(), view.replyMarkup(), null, view.parseMode()));
                 if (fallback != null && fallback.messageId() != null) {
                     screenStateContext.setRenderedMessageId(fallback.messageId());
                     screenStateContext.setRenderedMessageKind(ScreenStack.RenderedMessageKind.TEXT);
@@ -58,7 +59,7 @@ public final class DefaultTelegramScreenViewRenderer implements ScreenViewRender
         }
 
         deleteRenderedMessageIfNeeded(apiClient, chatId, renderedMessageId, view.renderMode());
-        Message sent = apiClient.sendMessage(new SendMessageRequest(chatId, view.text(), view.replyMarkup(), null));
+        Message sent = apiClient.sendMessage(new SendMessageRequest(chatId, view.text(), view.replyMarkup(), null, view.parseMode()));
         if (sent != null && sent.messageId() != null) {
             screenStateContext.setRenderedMessageId(sent.messageId());
             screenStateContext.setRenderedMessageKind(ScreenStack.RenderedMessageKind.TEXT);
@@ -86,7 +87,7 @@ public final class DefaultTelegramScreenViewRenderer implements ScreenViewRender
     }
 
     private void editExisting(TelegramApiClient apiClient, long chatId, int messageId, ScreenView view) {
-        apiClient.editMessageText(EditMessageTextRequest.forChatMessage(chatId, messageId, view.text()));
+        apiClient.editMessageText(EditMessageTextRequest.forChatMessage(chatId, messageId, view.text(), view.parseMode()));
         InlineKeyboardMarkup inlineKeyboardMarkup = extractInlineMarkup(view.replyMarkup());
         apiClient.editMessageReplyMarkup(EditMessageReplyMarkupRequest.forChatMessage(chatId, messageId, inlineKeyboardMarkup));
     }

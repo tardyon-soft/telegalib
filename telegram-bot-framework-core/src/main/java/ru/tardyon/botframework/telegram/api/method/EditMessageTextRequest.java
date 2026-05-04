@@ -8,7 +8,8 @@ public record EditMessageTextRequest(
     @JsonProperty("chat_id") Object chatId,
     @JsonProperty("message_id") Integer messageId,
     @JsonProperty("inline_message_id") String inlineMessageId,
-    String text
+    String text,
+    @JsonProperty("parse_mode") String parseMode
 ) {
     public EditMessageTextRequest {
         Objects.requireNonNull(text, "text must not be null");
@@ -24,12 +25,30 @@ public record EditMessageTextRequest(
         }
     }
 
+    public EditMessageTextRequest(
+        String businessConnectionId,
+        Object chatId,
+        Integer messageId,
+        String inlineMessageId,
+        String text
+    ) {
+        this(businessConnectionId, chatId, messageId, inlineMessageId, text, null);
+    }
+
     public static EditMessageTextRequest forChatMessage(long chatId, int messageId, String text) {
         return new EditMessageTextRequest(null, chatId, messageId, null, text);
     }
 
+    public static EditMessageTextRequest forChatMessage(long chatId, int messageId, String text, String parseMode) {
+        return new EditMessageTextRequest(null, chatId, messageId, null, text, parseMode);
+    }
+
     public static EditMessageTextRequest forChatMessage(String chatId, int messageId, String text) {
         return new EditMessageTextRequest(null, chatId, messageId, null, text);
+    }
+
+    public static EditMessageTextRequest forChatMessage(String chatId, int messageId, String text, String parseMode) {
+        return new EditMessageTextRequest(null, chatId, messageId, null, text, parseMode);
     }
 
     public static EditMessageTextRequest forInlineMessage(String inlineMessageId, String text) {

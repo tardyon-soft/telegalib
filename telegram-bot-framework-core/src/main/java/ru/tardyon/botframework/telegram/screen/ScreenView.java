@@ -9,11 +9,21 @@ public record ScreenView(
     String text,
     ReplyMarkup replyMarkup,
     ScreenRenderMode renderMode,
-    InputFile photo
+    InputFile photo,
+    String parseMode
 ) {
     public ScreenView {
         Objects.requireNonNull(text, "text must not be null");
         renderMode = renderMode == null ? ScreenRenderMode.AUTO : renderMode;
+    }
+
+    public ScreenView(
+        String text,
+        ReplyMarkup replyMarkup,
+        ScreenRenderMode renderMode,
+        InputFile photo
+    ) {
+        this(text, replyMarkup, renderMode, photo, null);
     }
 
     public static Builder builder() {
@@ -25,6 +35,7 @@ public record ScreenView(
         private ReplyMarkup replyMarkup;
         private ScreenRenderMode renderMode = ScreenRenderMode.AUTO;
         private InputFile photo;
+        private String parseMode;
 
         public Builder text(String text) {
             textBuilder.setLength(0);
@@ -56,6 +67,19 @@ public record ScreenView(
             return this;
         }
 
+        public Builder parseMode(String parseMode) {
+            this.parseMode = Objects.requireNonNull(parseMode, "parseMode must not be null");
+            return this;
+        }
+
+        public Builder html() {
+            return parseMode("HTML");
+        }
+
+        public Builder markdownV2() {
+            return parseMode("MarkdownV2");
+        }
+
         public Builder photo(InputFile photo) {
             this.photo = Objects.requireNonNull(photo, "photo must not be null");
             return this;
@@ -81,7 +105,7 @@ public record ScreenView(
         }
 
         public ScreenView build() {
-            return new ScreenView(textBuilder.toString(), replyMarkup, renderMode, photo);
+            return new ScreenView(textBuilder.toString(), replyMarkup, renderMode, photo, parseMode);
         }
     }
 }

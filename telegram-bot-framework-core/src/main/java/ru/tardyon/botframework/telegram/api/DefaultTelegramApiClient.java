@@ -760,6 +760,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
                 actualRequest.businessConnectionId(),
                 photoReference,
                 actualRequest.caption(),
+                actualRequest.parseMode(),
                 actualRequest.replyMarkup()
             );
             return invoke("sendPhoto", jsonPayload, objectMapper.getTypeFactory().constructType(Message.class));
@@ -998,6 +999,9 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             }
             if (request.caption() != null) {
                 multipart.addField("caption", request.caption());
+            }
+            if (request.parseMode() != null) {
+                multipart.addField("parse_mode", request.parseMode());
             }
             if (request.replyMarkup() != null) {
                 multipart.addField("reply_markup", objectMapper.writeValueAsString(request.replyMarkup()));
@@ -1484,6 +1488,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         @JsonProperty("business_connection_id") String businessConnectionId,
         String photo,
         String caption,
+        @JsonProperty("parse_mode") String parseMode,
         @JsonProperty("reply_markup") ReplyMarkup replyMarkup
     ) {
     }
