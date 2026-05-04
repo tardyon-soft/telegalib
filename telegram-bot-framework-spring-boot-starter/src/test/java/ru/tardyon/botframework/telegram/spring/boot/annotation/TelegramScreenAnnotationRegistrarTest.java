@@ -2,6 +2,7 @@ package ru.tardyon.botframework.telegram.spring.boot.annotation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -66,6 +67,10 @@ class TelegramScreenAnnotationRegistrarTest {
                     .flatMap(stack -> stack.current().map(ru.tardyon.botframework.telegram.screen.ScreenFrame::screenId))
                     .orElse(null);
                 assertThat(currentAfterPush).isEqualTo("settings");
+                assertThat(ScreenTestConfiguration.renderedViews)
+                    .last()
+                    .extracting(ScreenView::parseMode)
+                    .isEqualTo("HTML");
 
                 UpdateContext backContext = new UpdateContext(callbackUpdate(3L, ScreenCallbackData.back()), null, userStateStorage, "bot-test");
                 assertThat(screenEngine.handle(backContext)).isTrue();
@@ -153,10 +158,11 @@ class TelegramScreenAnnotationRegistrarTest {
 
     @Configuration(proxyBeanMethods = false)
     static class ScreenTestConfiguration {
+        private static final List<ScreenView> renderedViews = new java.util.concurrent.CopyOnWriteArrayList<>();
+
         @Bean
         ScreenViewRenderer testScreenViewRenderer() {
-            return (updateContext, screenStateContext, chatId, view) -> {
-            };
+            return (updateContext, screenStateContext, chatId, view) -> renderedViews.add(view);
         }
 
         @Bean
@@ -188,7 +194,7 @@ class TelegramScreenAnnotationRegistrarTest {
 
         @Screen(id = "settings", addBackButton = true)
         public ScreenView settings(ScreenContext context) {
-            return ScreenView.builder().text("settings").build();
+            return ScreenView.builder().html().text("<b>settings</b>").build();
         }
 
         @OnScreenMessage(screen = "home", textEquals = "to_settings")

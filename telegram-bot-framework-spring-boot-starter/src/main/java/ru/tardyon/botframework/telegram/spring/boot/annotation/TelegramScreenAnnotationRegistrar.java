@@ -309,7 +309,7 @@ public final class TelegramScreenAnnotationRegistrar implements SmartInitializin
             if (withBack == null) {
                 return base;
             }
-            return new ScreenView(base.text(), withBack, base.renderMode(), base.photo());
+            return new ScreenView(base.text(), withBack, base.renderMode(), base.photo(), base.parseMode());
         }
 
         private InlineKeyboardMarkup appendBackButton(ReplyMarkup replyMarkup) {
