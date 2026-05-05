@@ -111,6 +111,227 @@ class DefaultTelegramApiClientParsingTest {
     }
 
     @Test
+    void parseGetUpdatesResponseWithMessageAttachments() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 1101,
+                  "message": {
+                    "message_id": 43,
+                    "date": 1710000001,
+                    "media_group_id": "album-1",
+                    "caption": "attached payload",
+                    "caption_entities": [
+                      {
+                        "type": "bold",
+                        "offset": 0,
+                        "length": 8
+                      }
+                    ],
+                    "chat": {
+                      "id": 123456789,
+                      "type": "private"
+                    },
+                    "photo": [
+                      {
+                        "file_id": "photo-small",
+                        "file_unique_id": "photo-u-small",
+                        "width": 90,
+                        "height": 90,
+                        "file_size": 1024
+                      },
+                      {
+                        "file_id": "photo-big",
+                        "file_unique_id": "photo-u-big",
+                        "width": 1280,
+                        "height": 960,
+                        "file_size": 204800
+                      }
+                    ],
+                    "document": {
+                      "file_id": "document-file",
+                      "file_unique_id": "document-u",
+                      "thumbnail": {
+                        "file_id": "document-thumb",
+                        "file_unique_id": "document-thumb-u",
+                        "width": 320,
+                        "height": 240
+                      },
+                      "file_name": "report.pdf",
+                      "mime_type": "application/pdf",
+                      "file_size": 4096
+                    },
+                    "audio": {
+                      "file_id": "audio-file",
+                      "file_unique_id": "audio-u",
+                      "duration": 120,
+                      "performer": "Performer",
+                      "title": "Track",
+                      "file_name": "track.mp3",
+                      "mime_type": "audio/mpeg",
+                      "file_size": 8192,
+                      "thumbnail": {
+                        "file_id": "audio-thumb",
+                        "file_unique_id": "audio-thumb-u",
+                        "width": 100,
+                        "height": 100
+                      }
+                    },
+                    "voice": {
+                      "file_id": "voice-file",
+                      "file_unique_id": "voice-u",
+                      "duration": 12,
+                      "mime_type": "audio/ogg",
+                      "file_size": 512
+                    },
+                    "video": {
+                      "file_id": "video-file",
+                      "file_unique_id": "video-u",
+                      "width": 1920,
+                      "height": 1080,
+                      "duration": 30,
+                      "thumbnail": {
+                        "file_id": "video-thumb",
+                        "file_unique_id": "video-thumb-u",
+                        "width": 320,
+                        "height": 180
+                      },
+                      "file_size": 16384,
+                      "mime_type": "video/mp4"
+                    },
+                    "animation": {
+                      "file_id": "animation-file",
+                      "file_unique_id": "animation-u",
+                      "width": 640,
+                      "height": 480,
+                      "duration": 5,
+                      "file_name": "clip.gif",
+                      "mime_type": "image/gif",
+                      "file_size": 2048
+                    },
+                    "video_note": {
+                      "file_id": "video-note-file",
+                      "file_unique_id": "video-note-u",
+                      "length": 240,
+                      "duration": 10,
+                      "file_size": 1024
+                    },
+                    "sticker": {
+                      "file_id": "sticker-file",
+                      "file_unique_id": "sticker-u",
+                      "type": "regular",
+                      "width": 512,
+                      "height": 512,
+                      "is_animated": false,
+                      "is_video": false,
+                      "emoji": "ok",
+                      "set_name": "test_set",
+                      "custom_emoji_id": "custom-1",
+                      "file_size": 256
+                    }
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response =
+            DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        assertEquals(1, response.result().size());
+        Update update = response.result().get(0);
+        assertNotNull(update.message());
+
+        var message = update.message();
+        assertEquals("album-1", message.mediaGroupId());
+        assertEquals("attached payload", message.caption());
+        assertEquals("bold", message.captionEntities().get(0).type());
+        assertEquals("photo-big", message.photo().get(1).fileId());
+        assertEquals(204800L, message.photo().get(1).fileSize());
+        assertEquals("document-file", message.document().fileId());
+        assertEquals("document-thumb", message.document().thumbnail().fileId());
+        assertEquals("report.pdf", message.document().fileName());
+        assertEquals("audio-file", message.audio().fileId());
+        assertEquals("audio-thumb", message.audio().thumbnail().fileId());
+        assertEquals("Performer", message.audio().performer());
+        assertEquals("voice-file", message.voice().fileId());
+        assertEquals("audio/ogg", message.voice().mimeType());
+        assertEquals("video-file", message.video().fileId());
+        assertEquals("video-thumb", message.video().thumbnail().fileId());
+        assertEquals("animation-file", message.animation().fileId());
+        assertEquals("clip.gif", message.animation().fileName());
+        assertEquals("video-note-file", message.videoNote().fileId());
+        assertEquals(240, message.videoNote().length());
+        assertEquals("sticker-file", message.sticker().fileId());
+        assertEquals("regular", message.sticker().type());
+    }
+
+    @Test
+    void parseGetUpdatesResponseWithMediaGroupMessages() {
+        String raw = """
+            {
+              "ok": true,
+              "result": [
+                {
+                  "update_id": 1102,
+                  "message": {
+                    "message_id": 44,
+                    "date": 1710000002,
+                    "media_group_id": "album-2",
+                    "chat": {
+                      "id": 123456789,
+                      "type": "private"
+                    },
+                    "photo": [
+                      {
+                        "file_id": "album-photo-1",
+                        "file_unique_id": "album-photo-u-1",
+                        "width": 1280,
+                        "height": 960
+                      }
+                    ]
+                  }
+                },
+                {
+                  "update_id": 1103,
+                  "message": {
+                    "message_id": 45,
+                    "date": 1710000002,
+                    "media_group_id": "album-2",
+                    "chat": {
+                      "id": 123456789,
+                      "type": "private"
+                    },
+                    "video": {
+                      "file_id": "album-video-1",
+                      "file_unique_id": "album-video-u-1",
+                      "width": 1920,
+                      "height": 1080,
+                      "duration": 30
+                    }
+                  }
+                }
+              ]
+            }
+            """;
+
+        JavaType resultType = objectMapper.getTypeFactory().constructCollectionType(List.class, Update.class);
+        TelegramApiResponse<List<Update>> response =
+            DefaultTelegramApiClient.parseApiResponse(raw, resultType, objectMapper);
+
+        assertTrue(response.ok());
+        assertEquals(2, response.result().size());
+        assertEquals("album-2", response.result().get(0).message().mediaGroupId());
+        assertEquals("album-2", response.result().get(1).message().mediaGroupId());
+        assertEquals("album-photo-1", response.result().get(0).message().photo().get(0).fileId());
+        assertEquals("album-video-1", response.result().get(1).message().video().fileId());
+    }
+
+    @Test
     void parseGetUpdatesResponseWithCallbackQuery() {
         String raw = """
             {

@@ -4,16 +4,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record Document(
+public record VideoNote(
     @JsonProperty("file_id") String fileId,
     @JsonProperty("file_unique_id") String fileUniqueId,
+    Integer length,
+    Integer duration,
     PhotoSize thumbnail,
-    @JsonProperty("file_name") String fileName,
-    @JsonProperty("mime_type") String mimeType,
     @JsonProperty("file_size") Long fileSize
 ) {
-
-    public Document(String fileId, String fileUniqueId, String fileName, String mimeType, Long fileSize) {
-        this(fileId, fileUniqueId, null, fileName, mimeType, fileSize);
-    }
 }

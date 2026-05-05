@@ -4,18 +4,15 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record Video(
+public record Audio(
     @JsonProperty("file_id") String fileId,
     @JsonProperty("file_unique_id") String fileUniqueId,
-    Integer width,
-    Integer height,
     Integer duration,
-    PhotoSize thumbnail,
+    String performer,
+    String title,
+    @JsonProperty("file_name") String fileName,
+    @JsonProperty("mime_type") String mimeType,
     @JsonProperty("file_size") Long fileSize,
-    @JsonProperty("mime_type") String mimeType
+    PhotoSize thumbnail
 ) {
-
-    public Video(String fileId, String fileUniqueId, Integer width, Integer height, Integer duration, Long fileSize, String mimeType) {
-        this(fileId, fileUniqueId, width, height, duration, null, fileSize, mimeType);
-    }
 }
