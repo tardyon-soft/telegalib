@@ -29,6 +29,9 @@ import ru.tardyon.botframework.telegram.api.TelegramApiClient;
 import ru.tardyon.botframework.telegram.api.capability.BotApiCapabilities;
 import ru.tardyon.botframework.telegram.api.capability.BotApiCapabilitiesResolver;
 import ru.tardyon.botframework.telegram.api.capability.BotApiVersion;
+import ru.tardyon.botframework.telegram.api.transport.JdkTelegramHttpExecutor;
+import ru.tardyon.botframework.telegram.api.transport.Socks5HostnameTelegramHttpExecutor;
+import ru.tardyon.botframework.telegram.api.transport.TelegramHttpExecutor;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile;
 import ru.tardyon.botframework.telegram.bot.DefaultTelegramBot;
@@ -87,6 +90,24 @@ public class TelegramBotFrameworkAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
+    public TelegramHttpExecutor telegramHttpExecutor(
+        TelegramBotFrameworkProperties properties,
+        @Qualifier("telegramHttpClient") HttpClient telegramHttpClient
+    ) {
+        TelegramBotFrameworkProperties.ProxySettings proxy = properties.getProxy();
+        if (proxy.isEnabled() && proxy.getType() == TelegramBotFrameworkProperties.ProxyType.SOCKS5) {
+            return new Socks5HostnameTelegramHttpExecutor(
+                proxy.getHost(),
+                proxy.getPort(),
+                proxy.getUsername(),
+                proxy.getPassword()
+            );
+        }
+        return new JdkTelegramHttpExecutor(telegramHttpClient);
+    }
+
+    @Bean
+    @ConditionalOnMissingBean
     public ObjectMapper telegramObjectMapper() {
         return new ObjectMapper();
     }
@@ -139,7 +160,7 @@ public class TelegramBotFrameworkAutoConfiguration {
     public TelegramApiClient telegramApiClient(
         TelegramBotFrameworkProperties properties,
         BotApiTransportProfile botApiTransportProfile,
-        @Qualifier("telegramHttpClient") HttpClient telegramHttpClient,
+        TelegramHttpExecutor telegramHttpExecutor,
         ObjectMapper telegramObjectMapper,
         DiagnosticsHooks diagnosticsHooks
     ) {
@@ -149,7 +170,7 @@ public class TelegramBotFrameworkAutoConfiguration {
         return new DefaultTelegramApiClient(
             properties.getToken(),
             botApiTransportProfile,
-            telegramHttpClient,
+            telegramHttpExecutor,
             telegramObjectMapper,
             diagnosticsHooks
         );

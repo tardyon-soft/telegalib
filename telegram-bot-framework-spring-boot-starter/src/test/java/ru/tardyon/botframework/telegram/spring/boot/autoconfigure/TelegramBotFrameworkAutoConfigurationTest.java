@@ -14,6 +14,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import ru.tardyon.botframework.telegram.api.capability.BotApiCapabilities;
+import ru.tardyon.botframework.telegram.api.transport.Socks5HostnameTelegramHttpExecutor;
+import ru.tardyon.botframework.telegram.api.transport.TelegramHttpExecutor;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile;
 import ru.tardyon.botframework.telegram.diagnostics.BotApiRequestListener;
@@ -237,6 +239,26 @@ class TelegramBotFrameworkAutoConfigurationTest {
                 assertThat(httpClient.proxy().orElseThrow().select(URI.create("https://api.telegram.org")).getFirst().type())
                     .isEqualTo(Proxy.Type.SOCKS);
                 assertThat(httpClient.authenticator()).isPresent();
+            });
+    }
+
+    @Test
+    void usesHostnameAwareSocksExecutorWhenSocksProxyConfigured() {
+        contextRunner
+            .withPropertyValues(
+                "telegram.bot.token=test-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false",
+                "telegram.bot.proxy.enabled=true",
+                "telegram.bot.proxy.type=socks5",
+                "telegram.bot.proxy.host=127.0.0.1",
+                "telegram.bot.proxy.port=1080",
+                "telegram.bot.proxy.username=user",
+                "telegram.bot.proxy.password=secret"
+            )
+            .run(context -> {
+                assertThat(context).hasSingleBean(TelegramHttpExecutor.class);
+                assertThat(context.getBean(TelegramHttpExecutor.class)).isInstanceOf(Socks5HostnameTelegramHttpExecutor.class);
             });
     }
 

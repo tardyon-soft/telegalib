@@ -14,8 +14,11 @@ import java.net.http.HttpClient;
 import java.net.http.HttpHeaders;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Flow;
 import javax.net.ssl.SSLSession;
 import org.junit.jupiter.api.Test;
 import ru.tardyon.botframework.telegram.api.model.EditMessageTextResult;
@@ -1050,10 +1053,44 @@ class DefaultTelegramApiClientParsingTest {
         @Override
         public <T> HttpResponse<T> send(HttpRequest request, HttpResponse.BodyHandler<T> responseBodyHandler)
             throws IOException, InterruptedException {
-            HttpResponse<String> response = new StubHttpResponse(request, responseBody);
-            @SuppressWarnings("unchecked")
-            HttpResponse<T> casted = (HttpResponse<T>) response;
-            return casted;
+            byte[] body = responseBody.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            HttpResponse.ResponseInfo responseInfo = new HttpResponse.ResponseInfo() {
+                @Override
+                public int statusCode() {
+                    return 200;
+                }
+
+                @Override
+                public HttpHeaders headers() {
+                    return HttpHeaders.of(Map.of(), (a, b) -> true);
+                }
+
+                @Override
+                public HttpClient.Version version() {
+                    return HttpClient.Version.HTTP_1_1;
+                }
+            };
+            HttpResponse.BodySubscriber<T> subscriber = responseBodyHandler.apply(responseInfo);
+            subscriber.onSubscribe(new Flow.Subscription() {
+                private boolean done;
+
+                @Override
+                public void request(long n) {
+                    if (done) {
+                        return;
+                    }
+                    done = true;
+                    subscriber.onNext(List.of(ByteBuffer.wrap(body)));
+                    subscriber.onComplete();
+                }
+
+                @Override
+                public void cancel() {
+                    done = true;
+                }
+            });
+            T decodedBody = subscriber.getBody().toCompletableFuture().join();
+            return new StubHttpResponse<>(request, decodedBody);
         }
 
         @Override
@@ -1119,7 +1156,7 @@ class DefaultTelegramApiClientParsingTest {
         }
     }
 
-    private record StubHttpResponse(HttpRequest request, String body) implements HttpResponse<String> {
+    private record StubHttpResponse<T>(HttpRequest request, T body) implements HttpResponse<T> {
         @Override
         public int statusCode() {
             return 200;
@@ -1131,7 +1168,7 @@ class DefaultTelegramApiClientParsingTest {
         }
 
         @Override
-        public Optional<HttpResponse<String>> previousResponse() {
+        public Optional<HttpResponse<T>> previousResponse() {
             return Optional.empty();
         }
 
@@ -1141,7 +1178,7 @@ class DefaultTelegramApiClientParsingTest {
         }
 
         @Override
-        public String body() {
+        public T body() {
             return body;
         }
 

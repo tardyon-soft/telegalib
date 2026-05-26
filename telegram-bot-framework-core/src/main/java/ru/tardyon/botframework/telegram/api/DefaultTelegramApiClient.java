@@ -11,11 +11,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Objects;
@@ -140,6 +139,10 @@ import ru.tardyon.botframework.telegram.api.model.payment.OwnedGifts;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
 import ru.tardyon.botframework.telegram.api.transport.MultipartFormData;
+import ru.tardyon.botframework.telegram.api.transport.JdkTelegramHttpExecutor;
+import ru.tardyon.botframework.telegram.api.transport.TelegramHttpExecutor;
+import ru.tardyon.botframework.telegram.api.transport.TelegramHttpRequest;
+import ru.tardyon.botframework.telegram.api.transport.TelegramHttpResponse;
 import ru.tardyon.botframework.telegram.api.transport.TelegramApiResponse;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportMode;
 import ru.tardyon.botframework.telegram.api.transport.profile.BotApiTransportProfile;
@@ -156,12 +159,18 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     private final String botToken;
     private final BotApiTransportProfile transportProfile;
     private final String baseUrl;
-    private final HttpClient httpClient;
+    private final TelegramHttpExecutor httpExecutor;
     private final ObjectMapper objectMapper;
     private final DiagnosticsHooks diagnosticsHooks;
 
     public DefaultTelegramApiClient(String botToken) {
-        this(botToken, BotApiTransportProfile.cloudDefault(), HttpClient.newHttpClient(), new ObjectMapper());
+        this(
+            botToken,
+            BotApiTransportProfile.cloudDefault(),
+            new JdkTelegramHttpExecutor(HttpClient.newHttpClient()),
+            new ObjectMapper(),
+            DiagnosticsHooks.noop()
+        );
     }
 
     public DefaultTelegramApiClient(String botToken, HttpClient httpClient, ObjectMapper objectMapper) {
@@ -169,11 +178,17 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     }
 
     public DefaultTelegramApiClient(String botToken, BotApiTransportProfile transportProfile) {
-        this(botToken, transportProfile, HttpClient.newHttpClient(), new ObjectMapper(), DiagnosticsHooks.noop());
+        this(
+            botToken,
+            transportProfile,
+            new JdkTelegramHttpExecutor(HttpClient.newHttpClient()),
+            new ObjectMapper(),
+            DiagnosticsHooks.noop()
+        );
     }
 
     public DefaultTelegramApiClient(String botToken, BotApiTransportProfile transportProfile, HttpClient httpClient, ObjectMapper objectMapper) {
-        this(botToken, transportProfile, httpClient, objectMapper, DiagnosticsHooks.noop());
+        this(botToken, transportProfile, new JdkTelegramHttpExecutor(httpClient), objectMapper, DiagnosticsHooks.noop());
     }
 
     public DefaultTelegramApiClient(
@@ -183,10 +198,20 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         ObjectMapper objectMapper,
         DiagnosticsHooks diagnosticsHooks
     ) {
+        this(botToken, transportProfile, new JdkTelegramHttpExecutor(httpClient), objectMapper, diagnosticsHooks);
+    }
+
+    public DefaultTelegramApiClient(
+        String botToken,
+        BotApiTransportProfile transportProfile,
+        TelegramHttpExecutor httpExecutor,
+        ObjectMapper objectMapper,
+        DiagnosticsHooks diagnosticsHooks
+    ) {
         this.botToken = Objects.requireNonNull(botToken, "botToken must not be null");
         this.transportProfile = Objects.requireNonNull(transportProfile, "transportProfile must not be null");
         this.baseUrl = transportProfile.baseUrl();
-        this.httpClient = Objects.requireNonNull(httpClient, "httpClient must not be null");
+        this.httpExecutor = Objects.requireNonNull(httpExecutor, "httpExecutor must not be null");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null").copy();
         this.diagnosticsHooks = Objects.requireNonNull(diagnosticsHooks, "diagnosticsHooks must not be null");
         this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -848,10 +873,12 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             if (source.startsWith("file:")) {
                 return Files.readAllBytes(Path.of(URI.create(source)));
             }
-            HttpRequest request = HttpRequest.newBuilder(URI.create(source))
-                .GET()
-                .build();
-            HttpResponse<byte[]> response = httpClient.send(request, HttpResponse.BodyHandlers.ofByteArray());
+            TelegramHttpResponse response = httpExecutor.execute(new TelegramHttpRequest(
+                "GET",
+                URI.create(source),
+                Map.of(),
+                new byte[0]
+            ));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 rawBody = new String(response.body(), StandardCharsets.UTF_8);
                 throw new TelegramApiException(null, "Failed to download file. HTTP status: " + response.statusCode(), rawBody);
@@ -920,10 +947,10 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         ));
 
         try {
-            HttpRequest request = buildRequest(methodName, requestBody);
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            TelegramHttpRequest request = buildRequest(methodName, requestBody);
+            TelegramHttpResponse response = httpExecutor.execute(request);
             httpStatus = response.statusCode();
-            rawBody = response.body();
+            rawBody = new String(response.body(), StandardCharsets.UTF_8);
             TelegramApiResponse<T> envelope = parseApiResponse(rawBody, resultType, objectMapper);
 
             if (!Boolean.TRUE.equals(envelope.ok())) {
@@ -1346,14 +1373,17 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         ));
 
         try {
-            HttpRequest request = HttpRequest.newBuilder(buildMethodUri(methodName))
-                .header("Accept", "application/json")
-                .header("Content-Type", multipart.contentType())
-                .POST(HttpRequest.BodyPublishers.ofByteArray(multipart.body()))
-                .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            TelegramHttpResponse response = httpExecutor.execute(new TelegramHttpRequest(
+                "POST",
+                buildMethodUri(methodName),
+                Map.of(
+                    "Accept", List.of("application/json"),
+                    "Content-Type", List.of(multipart.contentType())
+                ),
+                multipart.body()
+            ));
             httpStatus = response.statusCode();
-            rawBody = response.body();
+            rawBody = new String(response.body(), StandardCharsets.UTF_8);
             TelegramApiResponse<T> envelope = parseApiResponse(rawBody, resultType, objectMapper);
             if (!Boolean.TRUE.equals(envelope.ok())) {
                 telegramErrorCode = envelope.errorCode();
@@ -1397,19 +1427,19 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         }
     }
 
-    private HttpRequest buildRequest(String methodName, Object requestBody) throws JsonProcessingException {
-        HttpRequest.Builder builder = HttpRequest.newBuilder(buildMethodUri(methodName))
-            .header("Accept", "application/json");
-
+    private TelegramHttpRequest buildRequest(String methodName, Object requestBody) throws JsonProcessingException {
+        Map<String, List<String>> headers;
         if (requestBody == null) {
-            return builder.POST(HttpRequest.BodyPublishers.noBody()).build();
+            headers = Map.of("Accept", List.of("application/json"));
+            return new TelegramHttpRequest("POST", buildMethodUri(methodName), headers, new byte[0]);
         }
 
         String jsonBody = objectMapper.writeValueAsString(requestBody);
-        return builder
-            .header("Content-Type", APPLICATION_JSON)
-            .POST(HttpRequest.BodyPublishers.ofString(jsonBody, StandardCharsets.UTF_8))
-            .build();
+        headers = Map.of(
+            "Accept", List.of("application/json"),
+            "Content-Type", List.of(APPLICATION_JSON)
+        );
+        return new TelegramHttpRequest("POST", buildMethodUri(methodName), headers, jsonBody.getBytes(StandardCharsets.UTF_8));
     }
 
     private URI buildMethodUri(String methodName) {
