@@ -1,6 +1,14 @@
 package ru.tardyon.botframework.telegram.screendemo.handler;
 
+import jakarta.annotation.PreDestroy;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import ru.tardyon.botframework.telegram.api.model.CallbackQuery;
 import ru.tardyon.botframework.telegram.api.model.Message;
 import ru.tardyon.botframework.telegram.api.model.markup.InlineKeyboardMarkup;
@@ -9,6 +17,8 @@ import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
 import ru.tardyon.botframework.telegram.screen.ScreenAction;
 import ru.tardyon.botframework.telegram.screen.ScreenCallbackData;
 import ru.tardyon.botframework.telegram.screen.ScreenContext;
+import ru.tardyon.botframework.telegram.screen.ScreenKey;
+import ru.tardyon.botframework.telegram.screen.ScreenNavigator;
 import ru.tardyon.botframework.telegram.screen.ScreenView;
 import ru.tardyon.botframework.telegram.screen.Widgets;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnScreenCallback;
@@ -26,15 +36,20 @@ public class ScreenDemoScreensController {
     private static final String PROFILE_SCREEN = "profile";
     private static final String CATALOG_LIST_SCREEN = "catalog_list";
     private static final String CATALOG_DETAILS_SCREEN = "catalog_details";
+    private static final String TASK_MONITOR_SCREEN = "task_monitor";
 
     private static final String TOGGLE_NOTIFICATIONS = "screen:screen:toggle_notifications:";
+    private static final String STOP_TASK_MONITOR = "screen:task_monitor:stop";
     private static final String HOME_MENU_WIDGET = "home_menu";
     private static final String CHANNELS_LIST_WIDGET = "channels_list";
+    private static final int TASK_MONITOR_MAX_PROGRESS = 100;
+    private static final int TASK_MONITOR_PROGRESS_STEP = 20;
 
     private static final List<MenuEntry> HOME_MENU = List.of(
         new MenuEntry("Настройки", SETTINGS_SCREEN),
         new MenuEntry("Профиль", PROFILE_SCREEN),
-        new MenuEntry("Каналы", CATALOG_LIST_SCREEN)
+        new MenuEntry("Каналы", CATALOG_LIST_SCREEN),
+        new MenuEntry("Мониторинг задачи", TASK_MONITOR_SCREEN)
     );
 
     private static final List<ChannelItem> CHANNELS = List.of(
@@ -97,9 +112,15 @@ public class ScreenDemoScreensController {
     );
 
     private final AnnotatedWidgetRegistry widgetRegistry;
+    private final TaskMonitorRunner taskMonitorRunner = new TaskMonitorRunner();
 
     public ScreenDemoScreensController(AnnotatedWidgetRegistry widgetRegistry) {
         this.widgetRegistry = widgetRegistry;
+    }
+
+    @PreDestroy
+    public void shutdownTaskMonitor() {
+        taskMonitorRunner.shutdown();
     }
 
     record MenuEntry(String label, String targetScreen) {
@@ -186,6 +207,28 @@ public class ScreenDemoScreensController {
             .build();
     }
 
+    @Screen(id = TASK_MONITOR_SCREEN, startCommand = "task_monitor", addBackButton = true)
+    public ScreenView taskMonitor(ScreenContext context, ScreenNavigator navigator) {
+        taskMonitorRunner.ensureStarted(context, navigator);
+        int progress = taskProgress(context);
+        boolean done = progress >= TASK_MONITOR_MAX_PROGRESS;
+        boolean stopped = isTaskMonitorStopped(context);
+        InlineKeyboardMarkup keyboard = Keyboards.inlineKeyboard()
+            .row(Keyboards.callbackButton(done ? "Закрыть мониторинг" : "Остановить мониторинг", STOP_TASK_MONITOR))
+            .build();
+
+        ScreenView.Builder builder = ScreenView.builder()
+            .line("Экран: TASK MONITOR")
+            .line("Фоновая задача: " + taskMonitorStatus(done, stopped))
+            .line("Прогресс: " + progress + "%")
+            .line("Обновлено: " + context.screenState().getData("task_monitor_updated_at").orElse("<pending>"))
+            .replyMarkup(keyboard);
+        if (!done && !stopped) {
+            builder.line("Следующее обновление через 5 секунд.");
+        }
+        return builder.build();
+    }
+
     @OnScreenMessage(screen = HOME_SCREEN, textEquals = "back")
     public ScreenAction backFromMessage(Message message) {
         return ScreenAction.back();
@@ -238,5 +281,99 @@ public class ScreenDemoScreensController {
     public ScreenAction backFromCatalogDetails(TelegramCallbackQuery callback) {
         callback.answer();
         return ScreenAction.back();
+    }
+
+    @OnScreenCallback(screen = TASK_MONITOR_SCREEN, callbackEquals = STOP_TASK_MONITOR)
+    public ScreenAction stopTaskMonitor(ScreenContext context, TelegramCallbackQuery callback) {
+        callback.answer();
+        taskMonitorRunner.cancel(context.screenState().key());
+        context.screenState().putData("task_monitor_running", false);
+        context.screenState().putData("task_monitor_stopped", true);
+        context.screenState().putData("task_monitor_updated_at", Instant.now().toString());
+        return ScreenAction.render();
+    }
+
+    @OnScreenCallback(screen = TASK_MONITOR_SCREEN, callbackEquals = "screen:nav:back")
+    public ScreenAction backFromTaskMonitor(ScreenContext context, TelegramCallbackQuery callback) {
+        callback.answer();
+        taskMonitorRunner.cancel(context.screenState().key());
+        return ScreenAction.back();
+    }
+
+    private int taskProgress(ScreenContext context) {
+        return context.screenState().getData("task_monitor_progress")
+            .map(Integer.class::cast)
+            .orElse(0);
+    }
+
+    private boolean isTaskMonitorStopped(ScreenContext context) {
+        return context.screenState().getData("task_monitor_stopped")
+            .map(Boolean.class::cast)
+            .orElse(false);
+    }
+
+    private String taskMonitorStatus(boolean done, boolean stopped) {
+        if (done) {
+            return "завершена";
+        }
+        if (stopped) {
+            return "остановлена";
+        }
+        return "выполняется";
+    }
+
+    private final class TaskMonitorRunner {
+        private final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "screen-demo-task-monitor");
+            thread.setDaemon(true);
+            return thread;
+        });
+        private final Map<ScreenKey, ScheduledFuture<?>> tasks = new ConcurrentHashMap<>();
+
+        void ensureStarted(ScreenContext context, ScreenNavigator navigator) {
+            ScreenKey key = context.screenState().key();
+            if (taskProgress(context) >= TASK_MONITOR_MAX_PROGRESS || isTaskMonitorStopped(context)) {
+                cancel(key);
+                return;
+            }
+            context.screenState().putData("task_monitor_running", true);
+            context.screenState().putData("task_monitor_updated_at", Instant.now().toString());
+            tasks.computeIfAbsent(key, ignored -> executor.scheduleAtFixedRate(
+                () -> tick(context, navigator),
+                5,
+                5,
+                TimeUnit.SECONDS
+            ));
+        }
+
+        void cancel(ScreenKey key) {
+            ScheduledFuture<?> future = tasks.remove(key);
+            if (future != null) {
+                future.cancel(false);
+            }
+        }
+
+        void shutdown() {
+            tasks.keySet().forEach(this::cancel);
+            executor.shutdownNow();
+        }
+
+        private void tick(ScreenContext context, ScreenNavigator navigator) {
+            ScreenKey key = context.screenState().key();
+            if (navigator.currentScreenId().filter(TASK_MONITOR_SCREEN::equals).isEmpty()) {
+                cancel(key);
+                return;
+            }
+
+            int progress = Math.min(TASK_MONITOR_MAX_PROGRESS, taskProgress(context) + TASK_MONITOR_PROGRESS_STEP);
+            context.screenState().putData("task_monitor_progress", progress);
+            context.screenState().putData("task_monitor_updated_at", Instant.now().toString());
+            context.screenState().putData("task_monitor_running", progress < TASK_MONITOR_MAX_PROGRESS);
+            navigator.renderCurrent();
+
+            if (progress >= TASK_MONITOR_MAX_PROGRESS) {
+                cancel(key);
+            }
+        }
     }
 }

@@ -11,15 +11,18 @@
 - annotation-driven screen API (`@ScreenController`, `@Screen`, `@OnScreenMessage`, `@OnScreenCallback`).
 - annotation-driven widget API (`@WidgetController`, `@Widget`, `@OnWidgetAction`).
 - автокнопку `Назад` через `@Screen(addBackButton = true)` для всех non-main экранов.
+- экран мониторинга фоновой задачи, который обновляется через `ScreenNavigator.renderCurrent()` раз в 5 секунд.
 
 ## Команды
 
 - `/screen_start` — открыть экран HOME;
+- `/task_monitor` — открыть экран фонового мониторинга задачи;
 - `/user_state_set` — записать `preferred_theme` в user state;
 - `/user_state_show` — показать значение из user state.
 - в HOME есть переход на экран `catalog_list`, где список каналов строится виджетом;
 - нажатие на канал передает `channel_id` и открывает `catalog_details`;
 - экран деталей показывает название, описание, подписчиков, средние просмотры и URL картинки.
+- экран `task_monitor` стартует demo-задачу, обновляет прогресс каждые 5 секунд и останавливает фоновой тик при завершении, уходе назад или нажатии `Остановить мониторинг`.
 
 ## Запуск
 
