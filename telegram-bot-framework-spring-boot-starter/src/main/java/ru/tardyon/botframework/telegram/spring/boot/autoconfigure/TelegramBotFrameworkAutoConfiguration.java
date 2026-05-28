@@ -273,13 +273,14 @@ public class TelegramBotFrameworkAutoConfiguration {
         TelegramApiClient telegramApiClient,
         LongPollingOptions longPollingOptions,
         StateStorage telegramStateStorage,
-        DiagnosticsHooks diagnosticsHooks
+        DiagnosticsHooks diagnosticsHooks,
+        TelegramBotFrameworkProperties properties
     ) {
         return new LongPollingRunner(
             telegramApiClient,
             longPollingOptions,
             telegramStateStorage,
-            buildBotId(telegramApiClient),
+            buildBotId(properties.getToken()),
             defaultPollingErrorHandler(),
             diagnosticsHooks
         );
@@ -369,7 +370,7 @@ public class TelegramBotFrameworkAutoConfiguration {
             telegramApiClient,
             properties.getWebhook().getSecretToken(),
             telegramStateStorage,
-            buildBotId(telegramApiClient),
+            buildBotId(properties.getToken()),
             diagnosticsHooks
         );
     }
@@ -398,8 +399,19 @@ public class TelegramBotFrameworkAutoConfiguration {
         return new TelegramWebhookController(webhookUpdateProcessor);
     }
 
-    private static String buildBotId(TelegramApiClient telegramApiClient) {
-        return telegramApiClient.getClass().getName() + "@" + Integer.toHexString(System.identityHashCode(telegramApiClient));
+    static String buildBotId(String token) {
+        if (!StringUtils.hasText(token)) {
+            return "default-bot";
+        }
+        String trimmed = token.trim();
+        int separatorIndex = trimmed.indexOf(':');
+        if (separatorIndex > 0) {
+            String tokenPrefix = trimmed.substring(0, separatorIndex);
+            if (!tokenPrefix.isBlank()) {
+                return "telegram-bot:" + tokenPrefix;
+            }
+        }
+        return "telegram-bot:" + Integer.toHexString(trimmed.hashCode());
     }
 
     private static ProxySelector proxySelector(TelegramBotFrameworkProperties.ProxySettings proxy) {

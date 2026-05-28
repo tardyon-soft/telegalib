@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.net.Proxy;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.lang.reflect.Field;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -324,6 +325,31 @@ class TelegramBotFrameworkAutoConfigurationTest {
             });
     }
 
+    @Test
+    void derivesStableBotIdFromTokenForPollingAndWebhook() {
+        contextRunner
+            .withPropertyValues(
+                "telegram.bot.token=123456:abc-token",
+                "telegram.bot.mode=polling",
+                "telegram.bot.polling.enabled=false"
+            )
+            .run(context -> {
+                LongPollingRunner longPollingRunner = context.getBean(LongPollingRunner.class);
+                WebhookUpdateProcessor webhookUpdateProcessor = context.getBean(WebhookUpdateProcessor.class);
+
+                assertThat(readField(longPollingRunner, "botId")).isEqualTo("telegram-bot:123456");
+                assertThat(readField(webhookUpdateProcessor, "botId")).isEqualTo("telegram-bot:123456");
+            });
+    }
+
+    @Test
+    void buildBotIdFallsBackToStableHashWhenTokenHasNoNumericPrefix() {
+        assertThat(TelegramBotFrameworkAutoConfiguration.buildBotId("test-token"))
+            .isEqualTo(TelegramBotFrameworkAutoConfiguration.buildBotId("test-token"));
+        assertThat(TelegramBotFrameworkAutoConfiguration.buildBotId("test-token"))
+            .startsWith("telegram-bot:");
+    }
+
     @Configuration(proxyBeanMethods = false)
     static class TestMiddlewareConfiguration {
         @Bean
@@ -366,5 +392,15 @@ class TelegramBotFrameworkAutoConfigurationTest {
     }
 
     static class CustomRouter extends Router {
+    }
+
+    private static Object readField(Object target, String fieldName) {
+        try {
+            Field field = target.getClass().getDeclaredField(fieldName);
+            field.setAccessible(true);
+            return field.get(target);
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("Failed to read field: " + fieldName, e);
+        }
     }
 }
