@@ -3,6 +3,7 @@ package ru.tardyon.botframework.telegram.api;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -189,6 +190,19 @@ class DefaultTelegramApiClientFileSupportTest {
     }
 
     @Test
+    void downloadFileAcceptsAbsoluteTelegramUrl() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okMessageResponse());
+        httpClient.stubDownload("/file/bottoken/documents/report.pdf", "binary-content".getBytes(StandardCharsets.UTF_8));
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        String url = "https://api.telegram.org/file/bottoken/documents/report.pdf";
+        byte[] content = client.downloadFile(url);
+
+        assertArrayEquals("binary-content".getBytes(StandardCharsets.UTF_8), content);
+        assertEquals(url, httpClient.lastRequest().uri().toString());
+    }
+
+    @Test
     void localModeBuildFileDownloadUrlReturnsFileUriForAbsolutePath(@TempDir Path tempDir) {
         RecordingHttpClient httpClient = new RecordingHttpClient(okMessageResponse());
         DefaultTelegramApiClient client = new DefaultTelegramApiClient(
@@ -233,6 +247,19 @@ class DefaultTelegramApiClientFileSupportTest {
 
         assertEquals(target, savedPath);
         assertArrayEquals("zip-bytes".getBytes(StandardCharsets.UTF_8), Files.readAllBytes(target));
+    }
+
+    @Test
+    void downloadsFileToTempPath() throws Exception {
+        RecordingHttpClient httpClient = new RecordingHttpClient(okMessageResponse());
+        httpClient.stubDownload("/file/bottoken/files/archive.zip", "zip-bytes".getBytes(StandardCharsets.UTF_8));
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        Path savedPath = client.downloadFileToTemp("https://api.telegram.org/file/bottoken/files/archive.zip");
+
+        assertTrue(Files.exists(savedPath));
+        assertNotEquals("archive.zip", savedPath.getFileName().toString());
+        assertArrayEquals("zip-bytes".getBytes(StandardCharsets.UTF_8), Files.readAllBytes(savedPath));
     }
 
     private static String okMessageResponse() {

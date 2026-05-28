@@ -857,11 +857,14 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
 
     @Override
     public String buildFileDownloadUrl(String filePath) {
-        String actualFilePath = requireText(filePath, "filePath");
-        if (isLocalMode() && isAbsoluteLocalPath(actualFilePath)) {
-            return Path.of(actualFilePath).toUri().toString();
+        String actualFilePathOrUrl = requireText(filePath, "filePath");
+        if (isAbsoluteUri(actualFilePathOrUrl)) {
+            return actualFilePathOrUrl;
         }
-        String normalizedPath = actualFilePath.startsWith("/") ? actualFilePath.substring(1) : actualFilePath;
+        if (isLocalMode() && isAbsoluteLocalPath(actualFilePathOrUrl)) {
+            return Path.of(actualFilePathOrUrl).toUri().toString();
+        }
+        String normalizedPath = actualFilePathOrUrl.startsWith("/") ? actualFilePathOrUrl.substring(1) : actualFilePathOrUrl;
         return baseUrl + "/file/bot" + botToken + "/" + normalizedPath;
     }
 
@@ -927,6 +930,15 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
 
     private Object requireRequest(Object request) {
         return Objects.requireNonNull(request, "request must not be null");
+    }
+
+    private static boolean isAbsoluteUri(String value) {
+        try {
+            URI uri = URI.create(value);
+            return uri.isAbsolute();
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     private <T> T invoke(String methodName, Object requestBody, JavaType resultType) {

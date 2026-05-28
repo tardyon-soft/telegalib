@@ -1,5 +1,7 @@
 package ru.tardyon.botframework.telegram.api;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import ru.tardyon.botframework.telegram.api.method.AnswerCallbackQueryRequest;
@@ -107,6 +109,7 @@ import ru.tardyon.botframework.telegram.api.model.menu.MenuButton;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.webapp.PreparedInlineMessage;
 import ru.tardyon.botframework.telegram.api.model.webapp.SentWebAppMessage;
+import ru.tardyon.botframework.telegram.exception.TelegramApiException;
 import ru.tardyon.botframework.telegram.api.model.payment.StarAmount;
 import ru.tardyon.botframework.telegram.api.model.payment.StarTransactions;
 import ru.tardyon.botframework.telegram.api.model.payment.Gifts;
@@ -399,6 +402,15 @@ public interface TelegramApiClient {
     byte[] downloadFile(String filePath);
 
     Path downloadFile(String filePath, Path targetPath);
+
+    default Path downloadFileToTemp(String filePathOrUrl) {
+        try {
+            Path tempFile = Files.createTempFile("telegram-file-", null);
+            return downloadFile(filePathOrUrl, tempFile);
+        } catch (IOException e) {
+            throw new TelegramApiException(null, "I/O error while creating temp file for downloaded Telegram file", null, e);
+        }
+    }
 
     boolean setWebhook(SetWebhookRequest request);
 
