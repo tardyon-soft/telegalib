@@ -70,13 +70,14 @@ class DefaultTelegramApiClientFileSupportTest {
         RecordingHttpClient httpClient = new RecordingHttpClient(okMessageResponse());
         DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
 
-        client.sendDocument(SendDocumentRequest.of(123L, InputFile.fileId("file-id-1")));
+        client.sendDocument(SendDocumentRequest.of(123L, InputFile.fileId("file-id-1")).withReplyTo(77));
 
         HttpRequest request = httpClient.lastRequest();
         String contentType = request.headers().firstValue("Content-Type").orElse("");
         assertTrue(contentType.startsWith("application/json"));
         String jsonBody = new String(readBody(request), StandardCharsets.UTF_8);
         assertTrue(jsonBody.contains("\"document\":\"file-id-1\""));
+        assertTrue(jsonBody.contains("\"reply_parameters\":{\"message_id\":77}"));
         assertFalse(jsonBody.contains("referenceType"));
         assertFalse(jsonBody.contains("\"document\":{"));
     }
@@ -92,7 +93,7 @@ class DefaultTelegramApiClientFileSupportTest {
             "test-caption",
             null
         );
-        client.sendDocument(request);
+        client.sendDocument(request.withReplyTo(78));
 
         HttpRequest sentRequest = httpClient.lastRequest();
         String contentType = sentRequest.headers().firstValue("Content-Type").orElse("");
@@ -100,6 +101,8 @@ class DefaultTelegramApiClientFileSupportTest {
         String body = new String(readBody(sentRequest), StandardCharsets.UTF_8);
         assertTrue(body.contains("name=\"chat_id\""));
         assertTrue(body.contains("name=\"caption\""));
+        assertTrue(body.contains("name=\"reply_parameters\""));
+        assertTrue(body.contains("{\"message_id\":78}"));
         assertTrue(body.contains("name=\"document\"; filename=\"hello.txt\""));
         assertTrue(body.contains("hello"));
     }
@@ -137,13 +140,14 @@ class DefaultTelegramApiClientFileSupportTest {
                     new InputMediaPhoto(InputFile.fileId("photo-id-1")),
                     new InputMediaPhoto(InputFile.fileId("photo-id-2"))
                 )
-            )
+            ).withReplyTo(79)
         );
 
         HttpRequest request = httpClient.lastRequest();
         String contentType = request.headers().firstValue("Content-Type").orElse("");
         assertTrue(contentType.startsWith("application/json"));
         String jsonBody = new String(readBody(request), StandardCharsets.UTF_8);
+        assertTrue(jsonBody.contains("\"reply_parameters\":{\"message_id\":79}"));
         assertTrue(jsonBody.contains("\"media\":["));
         assertTrue(jsonBody.contains("\"type\":\"photo\""));
         assertTrue(jsonBody.contains("\"media\":\"photo-id-1\""));
@@ -162,7 +166,7 @@ class DefaultTelegramApiClientFileSupportTest {
                     new InputMediaDocument(InputFile.bytes("doc1.txt", "doc1".getBytes(StandardCharsets.UTF_8))),
                     new InputMediaDocument(InputFile.fileId("existing-doc-id"))
                 )
-            )
+            ).withReplyTo(80)
         );
 
         HttpRequest request = httpClient.lastRequest();
@@ -170,6 +174,8 @@ class DefaultTelegramApiClientFileSupportTest {
         assertTrue(contentType.startsWith("multipart/form-data; boundary="));
         String body = new String(readBody(request), StandardCharsets.UTF_8);
         assertTrue(body.contains("name=\"chat_id\""));
+        assertTrue(body.contains("name=\"reply_parameters\""));
+        assertTrue(body.contains("{\"message_id\":80}"));
         assertTrue(body.contains("name=\"media\""));
         assertTrue(body.contains("\"media\":\"attach://media1\""));
         assertTrue(body.contains("\"media\":\"existing-doc-id\""));

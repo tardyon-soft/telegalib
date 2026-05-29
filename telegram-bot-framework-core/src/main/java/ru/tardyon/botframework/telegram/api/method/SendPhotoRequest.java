@@ -3,6 +3,7 @@ package ru.tardyon.botframework.telegram.api.method;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import ru.tardyon.botframework.telegram.api.file.InputFile;
+import ru.tardyon.botframework.telegram.api.model.ReplyParameters;
 import ru.tardyon.botframework.telegram.api.model.markup.ReplyMarkup;
 
 public record SendPhotoRequest(
@@ -11,7 +12,8 @@ public record SendPhotoRequest(
     InputFile photo,
     String caption,
     @JsonProperty("parse_mode") String parseMode,
-    @JsonProperty("reply_markup") ReplyMarkup replyMarkup
+    @JsonProperty("reply_markup") ReplyMarkup replyMarkup,
+    @JsonProperty("reply_parameters") ReplyParameters replyParameters
 ) {
     public SendPhotoRequest {
         Objects.requireNonNull(chatId, "chatId must not be null");
@@ -23,9 +25,20 @@ public record SendPhotoRequest(
         String businessConnectionId,
         InputFile photo,
         String caption,
+        String parseMode,
         ReplyMarkup replyMarkup
     ) {
-        this(chatId, businessConnectionId, photo, caption, null, replyMarkup);
+        this(chatId, businessConnectionId, photo, caption, parseMode, replyMarkup, null);
+    }
+
+    public SendPhotoRequest(
+        Object chatId,
+        String businessConnectionId,
+        InputFile photo,
+        String caption,
+        ReplyMarkup replyMarkup
+    ) {
+        this(chatId, businessConnectionId, photo, caption, null, replyMarkup, null);
     }
 
     public static SendPhotoRequest of(long chatId, InputFile photo) {
@@ -52,6 +65,10 @@ public record SendPhotoRequest(
         String parseMode,
         ReplyMarkup replyMarkup
     ) {
-        this(chatId, null, photo, caption, parseMode, replyMarkup);
+        this(chatId, null, photo, caption, parseMode, replyMarkup, null);
+    }
+
+    public SendPhotoRequest withReplyTo(int messageId) {
+        return new SendPhotoRequest(chatId, businessConnectionId, photo, caption, parseMode, replyMarkup, ReplyParameters.of(messageId));
     }
 }

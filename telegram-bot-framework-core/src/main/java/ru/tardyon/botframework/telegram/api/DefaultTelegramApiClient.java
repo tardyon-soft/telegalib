@@ -123,6 +123,7 @@ import ru.tardyon.botframework.telegram.api.model.Update;
 import ru.tardyon.botframework.telegram.api.model.User;
 import ru.tardyon.botframework.telegram.api.model.WebhookInfo;
 import ru.tardyon.botframework.telegram.api.model.MessageEntity;
+import ru.tardyon.botframework.telegram.api.model.ReplyParameters;
 import ru.tardyon.botframework.telegram.api.model.markup.ReplyMarkup;
 import ru.tardyon.botframework.telegram.api.model.business.BusinessConnection;
 import ru.tardyon.botframework.telegram.api.model.command.BotCommand;
@@ -356,7 +357,8 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
                 actualRequest.parseMode(),
                 actualRequest.captionEntities(),
                 actualRequest.showCaptionAboveMedia(),
-                actualRequest.disableNotification()
+                actualRequest.disableNotification(),
+                actualRequest.replyParameters()
             );
             return invoke("sendPaidMedia", payload, objectMapper.getTypeFactory().constructType(Message.class));
         }
@@ -766,7 +768,8 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
                 actualRequest.businessConnectionId(),
                 documentReference,
                 actualRequest.caption(),
-                actualRequest.replyMarkup()
+                actualRequest.replyMarkup(),
+                actualRequest.replyParameters()
             );
             return invoke("sendDocument", jsonPayload, objectMapper.getTypeFactory().constructType(Message.class));
         }
@@ -786,7 +789,8 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
                 photoReference,
                 actualRequest.caption(),
                 actualRequest.parseMode(),
-                actualRequest.replyMarkup()
+                actualRequest.replyMarkup(),
+                actualRequest.replyParameters()
             );
             return invoke("sendPhoto", jsonPayload, objectMapper.getTypeFactory().constructType(Message.class));
         }
@@ -804,9 +808,9 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         SendVideoRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
         String reference = tryResolveStringReference(actualRequest.video());
         if (reference != null) {
-            return invoke("sendVideo", new SendMediaJsonPayload(actualRequest.chatId(), actualRequest.businessConnectionId(), reference, null, null, actualRequest.caption(), actualRequest.replyMarkup()), objectMapper.getTypeFactory().constructType(Message.class));
+            return invoke("sendVideo", new SendMediaJsonPayload(actualRequest.chatId(), actualRequest.businessConnectionId(), reference, null, null, actualRequest.caption(), actualRequest.replyMarkup(), actualRequest.replyParameters()), objectMapper.getTypeFactory().constructType(Message.class));
         }
-        return sendMediaMultipart("sendVideo", "video", actualRequest.chatId(), actualRequest.businessConnectionId(), actualRequest.video(), actualRequest.caption(), actualRequest.replyMarkup());
+        return sendMediaMultipart("sendVideo", "video", actualRequest.chatId(), actualRequest.businessConnectionId(), actualRequest.video(), actualRequest.caption(), actualRequest.replyMarkup(), actualRequest.replyParameters());
     }
 
     @Override
@@ -814,9 +818,9 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         SendAudioRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
         String reference = tryResolveStringReference(actualRequest.audio());
         if (reference != null) {
-            return invoke("sendAudio", new SendMediaJsonPayload(actualRequest.chatId(), actualRequest.businessConnectionId(), null, reference, null, actualRequest.caption(), actualRequest.replyMarkup()), objectMapper.getTypeFactory().constructType(Message.class));
+            return invoke("sendAudio", new SendMediaJsonPayload(actualRequest.chatId(), actualRequest.businessConnectionId(), null, reference, null, actualRequest.caption(), actualRequest.replyMarkup(), actualRequest.replyParameters()), objectMapper.getTypeFactory().constructType(Message.class));
         }
-        return sendMediaMultipart("sendAudio", "audio", actualRequest.chatId(), actualRequest.businessConnectionId(), actualRequest.audio(), actualRequest.caption(), actualRequest.replyMarkup());
+        return sendMediaMultipart("sendAudio", "audio", actualRequest.chatId(), actualRequest.businessConnectionId(), actualRequest.audio(), actualRequest.caption(), actualRequest.replyMarkup(), actualRequest.replyParameters());
     }
 
     @Override
@@ -824,9 +828,9 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         SendAnimationRequest actualRequest = Objects.requireNonNull(request, "request must not be null");
         String reference = tryResolveStringReference(actualRequest.animation());
         if (reference != null) {
-            return invoke("sendAnimation", new SendMediaJsonPayload(actualRequest.chatId(), actualRequest.businessConnectionId(), null, null, reference, actualRequest.caption(), actualRequest.replyMarkup()), objectMapper.getTypeFactory().constructType(Message.class));
+            return invoke("sendAnimation", new SendMediaJsonPayload(actualRequest.chatId(), actualRequest.businessConnectionId(), null, null, reference, actualRequest.caption(), actualRequest.replyMarkup(), actualRequest.replyParameters()), objectMapper.getTypeFactory().constructType(Message.class));
         }
-        return sendMediaMultipart("sendAnimation", "animation", actualRequest.chatId(), actualRequest.businessConnectionId(), actualRequest.animation(), actualRequest.caption(), actualRequest.replyMarkup());
+        return sendMediaMultipart("sendAnimation", "animation", actualRequest.chatId(), actualRequest.businessConnectionId(), actualRequest.animation(), actualRequest.caption(), actualRequest.replyMarkup(), actualRequest.replyParameters());
     }
 
     @Override
@@ -845,6 +849,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             SendMediaGroupJsonPayload payload = new SendMediaGroupJsonPayload(
                 actualRequest.chatId(),
                 actualRequest.businessConnectionId(),
+                actualRequest.replyParameters(),
                 actualRequest.media().stream()
                     .map(this::toMediaPayloadWithReference)
                     .toList()
@@ -1020,6 +1025,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             if (request.replyMarkup() != null) {
                 multipart.addField("reply_markup", objectMapper.writeValueAsString(request.replyMarkup()));
             }
+            addReplyParametersField(multipart, request.replyParameters());
 
             addInputFilePart(multipart, "document", inputFile, "document");
             MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
@@ -1045,6 +1051,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             if (request.replyMarkup() != null) {
                 multipart.addField("reply_markup", objectMapper.writeValueAsString(request.replyMarkup()));
             }
+            addReplyParametersField(multipart, request.replyParameters());
 
             addInputFilePart(multipart, "photo", inputFile, "photo");
             MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
@@ -1061,7 +1068,8 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         String businessConnectionId,
         InputFile inputFile,
         String caption,
-        ReplyMarkup replyMarkup
+        ReplyMarkup replyMarkup,
+        ReplyParameters replyParameters
     ) {
         try {
             MultipartFormData multipart = new MultipartFormData()
@@ -1075,6 +1083,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             if (replyMarkup != null) {
                 multipart.addField("reply_markup", objectMapper.writeValueAsString(replyMarkup));
             }
+            addReplyParametersField(multipart, replyParameters);
             addInputFilePart(multipart, partName, inputFile, partName);
             MultipartFormData.BuiltMultipart builtMultipart = multipart.build();
             return invokeMultipart(methodName, builtMultipart, objectMapper.getTypeFactory().constructType(Message.class));
@@ -1103,6 +1112,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             if (request.businessConnectionId() != null) {
                 multipart.addField("business_connection_id", request.businessConnectionId());
             }
+            addReplyParametersField(multipart, request.replyParameters());
 
             AtomicInteger counter = new AtomicInteger(0);
             List<SendMediaGroupItemPayload> payloadItems = request.media().stream()
@@ -1143,6 +1153,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             if (request.disableNotification() != null) {
                 multipart.addField("disable_notification", String.valueOf(request.disableNotification()));
             }
+            addReplyParametersField(multipart, request.replyParameters());
 
             AtomicInteger counter = new AtomicInteger(0);
             List<SendPaidMediaItemPayload> payloadItems = request.media().stream()
@@ -1257,6 +1268,12 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
             return new StoryContentPayload(content.type(), "attach://" + attachName, video.duration(), video.coverFrameTimestamp(), video.isAnimation());
         }
         return new StoryContentPayload(content.type(), "attach://" + attachName, null, null, null);
+    }
+
+    private void addReplyParametersField(MultipartFormData multipart, ReplyParameters replyParameters) throws JsonProcessingException {
+        if (replyParameters != null) {
+            multipart.addField("reply_parameters", objectMapper.writeValueAsString(replyParameters));
+        }
     }
 
     private SendMediaGroupItemPayload toMediaPayloadWithReference(InputMedia inputMedia) {
@@ -1521,7 +1538,8 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         @JsonProperty("business_connection_id") String businessConnectionId,
         String document,
         String caption,
-        @JsonProperty("reply_markup") ReplyMarkup replyMarkup
+        @JsonProperty("reply_markup") ReplyMarkup replyMarkup,
+        @JsonProperty("reply_parameters") ReplyParameters replyParameters
     ) {
     }
 
@@ -1531,7 +1549,8 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         String photo,
         String caption,
         @JsonProperty("parse_mode") String parseMode,
-        @JsonProperty("reply_markup") ReplyMarkup replyMarkup
+        @JsonProperty("reply_markup") ReplyMarkup replyMarkup,
+        @JsonProperty("reply_parameters") ReplyParameters replyParameters
     ) {
     }
 
@@ -1542,7 +1561,8 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         String audio,
         String animation,
         String caption,
-        @JsonProperty("reply_markup") ReplyMarkup replyMarkup
+        @JsonProperty("reply_markup") ReplyMarkup replyMarkup,
+        @JsonProperty("reply_parameters") ReplyParameters replyParameters
     ) {
     }
 
@@ -1555,6 +1575,7 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
     private record SendMediaGroupJsonPayload(
         @JsonProperty("chat_id") Object chatId,
         @JsonProperty("business_connection_id") String businessConnectionId,
+        @JsonProperty("reply_parameters") ReplyParameters replyParameters,
         List<SendMediaGroupItemPayload> media
     ) {
     }
@@ -1588,7 +1609,8 @@ public class DefaultTelegramApiClient implements TelegramApiClient {
         @JsonProperty("parse_mode") String parseMode,
         @JsonProperty("caption_entities") List<MessageEntity> captionEntities,
         @JsonProperty("show_caption_above_media") Boolean showCaptionAboveMedia,
-        @JsonProperty("disable_notification") Boolean disableNotification
+        @JsonProperty("disable_notification") Boolean disableNotification,
+        @JsonProperty("reply_parameters") ReplyParameters replyParameters
     ) {
     }
 

@@ -3,6 +3,7 @@ package ru.tardyon.botframework.telegram.api.method;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
+import ru.tardyon.botframework.telegram.api.model.ReplyParameters;
 import ru.tardyon.botframework.telegram.api.model.media.InputMedia;
 import ru.tardyon.botframework.telegram.api.model.media.InputMediaAudio;
 import ru.tardyon.botframework.telegram.api.model.media.InputMediaDocument;
@@ -10,7 +11,8 @@ import ru.tardyon.botframework.telegram.api.model.media.InputMediaDocument;
 public record SendMediaGroupRequest(
     @JsonProperty("chat_id") Object chatId,
     @JsonProperty("business_connection_id") String businessConnectionId,
-    List<InputMedia> media
+    List<InputMedia> media,
+    @JsonProperty("reply_parameters") ReplyParameters replyParameters
 ) {
 
     public SendMediaGroupRequest {
@@ -24,15 +26,23 @@ public record SendMediaGroupRequest(
     }
 
     public static SendMediaGroupRequest of(long chatId, List<InputMedia> media) {
-        return new SendMediaGroupRequest(chatId, null, media);
+        return new SendMediaGroupRequest(chatId, null, media, null);
     }
 
     public static SendMediaGroupRequest of(String chatId, List<InputMedia> media) {
-        return new SendMediaGroupRequest(chatId, null, media);
+        return new SendMediaGroupRequest(chatId, null, media, null);
     }
 
     public SendMediaGroupRequest(Object chatId, List<InputMedia> media) {
-        this(chatId, null, media);
+        this(chatId, null, media, null);
+    }
+
+    public SendMediaGroupRequest(Object chatId, String businessConnectionId, List<InputMedia> media) {
+        this(chatId, businessConnectionId, media, null);
+    }
+
+    public SendMediaGroupRequest withReplyTo(int messageId) {
+        return new SendMediaGroupRequest(chatId, businessConnectionId, media, ReplyParameters.of(messageId));
     }
 
     private static void validateAlbumTypeComposition(List<InputMedia> media) {

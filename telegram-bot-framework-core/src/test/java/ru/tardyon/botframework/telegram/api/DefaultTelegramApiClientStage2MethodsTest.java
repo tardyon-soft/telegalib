@@ -342,7 +342,7 @@ class DefaultTelegramApiClientStage2MethodsTest {
                 null,
                 null,
                 null
-            )
+            ).withReplyTo(91)
         );
 
         assertEquals("/bottoken/sendInvoice", httpClient.lastRequest().uri().getPath());
@@ -351,6 +351,7 @@ class DefaultTelegramApiClientStage2MethodsTest {
         assertTrue(body.contains("\"title\":\"Pro plan\""));
         assertTrue(body.contains("\"currency\":\"USD\""));
         assertTrue(body.contains("\"prices\":["));
+        assertTrue(body.contains("\"reply_parameters\":{\"message_id\":91}"));
     }
 
     @Test
@@ -377,7 +378,7 @@ class DefaultTelegramApiClientStage2MethodsTest {
                 null,
                 true,
                 true
-            )
+            ).withReplyTo(92)
         );
 
         assertEquals("/bottoken/sendPaidMedia", httpClient.lastRequest().uri().getPath());
@@ -387,6 +388,7 @@ class DefaultTelegramApiClientStage2MethodsTest {
         assertTrue(body.contains("\"media\":["));
         assertTrue(body.contains("\"type\":\"photo\""));
         assertTrue(body.contains("\"type\":\"video\""));
+        assertTrue(body.contains("\"reply_parameters\":{\"message_id\":92}"));
     }
 
     @Test
@@ -1029,21 +1031,25 @@ class DefaultTelegramApiClientStage2MethodsTest {
         );
         DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
 
-        assertEquals(10, client.sendVideo(SendVideoRequest.of(100L, InputFile.fileId("video-id"))).messageId());
+        assertEquals(10, client.sendVideo(SendVideoRequest.of(100L, InputFile.fileId("video-id")).withReplyTo(93)).messageId());
         assertEquals("/bottoken/sendVideo", httpClient.lastRequest().uri().getPath());
         assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"video\":\"video-id\""));
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"reply_parameters\":{\"message_id\":93}"));
 
-        client.sendAudio(SendAudioRequest.of(100L, InputFile.fileId("audio-id")));
+        client.sendAudio(SendAudioRequest.of(100L, InputFile.fileId("audio-id")).withReplyTo(94));
         assertEquals("/bottoken/sendAudio", httpClient.lastRequest().uri().getPath());
         assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"audio\":\"audio-id\""));
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"reply_parameters\":{\"message_id\":94}"));
 
-        client.sendAnimation(SendAnimationRequest.of(100L, InputFile.fileId("anim-id")));
+        client.sendAnimation(SendAnimationRequest.of(100L, InputFile.fileId("anim-id")).withReplyTo(95));
         assertEquals("/bottoken/sendAnimation", httpClient.lastRequest().uri().getPath());
         assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"animation\":\"anim-id\""));
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"reply_parameters\":{\"message_id\":95}"));
 
-        client.sendPoll(new SendPollRequest(100L, "Question?", List.of("A", "B"), true, null, null, null));
+        client.sendPoll(new SendPollRequest(100L, "Question?", List.of("A", "B"), true, null, null, null).withReplyTo(96));
         assertEquals("/bottoken/sendPoll", httpClient.lastRequest().uri().getPath());
         assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"options\":[\"A\",\"B\"]"));
+        assertTrue(new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8).contains("\"reply_parameters\":{\"message_id\":96}"));
 
         httpClient.setDefaultJsonBody(okTrueResponse());
         assertTrue(client.pinChatMessage(new PinChatMessageRequest(null, "@demo_channel", 10, true)));
@@ -1068,22 +1074,24 @@ class DefaultTelegramApiClientStage2MethodsTest {
             "<b>caption</b>",
             "HTML",
             null
-        ));
+        ).withReplyTo(97));
         assertEquals("/bottoken/sendPhoto", httpClient.lastRequest().uri().getPath());
         String fileIdBody = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
         assertTrue(fileIdBody.contains("\"photo\":\"photo-file-id\""));
         assertTrue(fileIdBody.contains("\"caption\":\"<b>caption</b>\""));
         assertTrue(fileIdBody.contains("\"parse_mode\":\"HTML\""));
+        assertTrue(fileIdBody.contains("\"reply_parameters\":{\"message_id\":97}"));
 
         client.sendPhoto(new ru.tardyon.botframework.telegram.api.method.SendPhotoRequest(
             100L,
             InputFile.url("https://example.com/photo.jpg"),
             null,
             null
-        ));
+        ).withReplyTo(98));
         assertEquals("/bottoken/sendPhoto", httpClient.lastRequest().uri().getPath());
         String urlBody = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
         assertTrue(urlBody.contains("\"photo\":\"https://example.com/photo.jpg\""));
+        assertTrue(urlBody.contains("\"reply_parameters\":{\"message_id\":98}"));
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
 import ru.tardyon.botframework.telegram.api.model.MessageEntity;
+import ru.tardyon.botframework.telegram.api.model.ReplyParameters;
 import ru.tardyon.botframework.telegram.api.model.payment.InputPaidMedia;
 
 public record SendPaidMediaRequest(
@@ -16,8 +17,36 @@ public record SendPaidMediaRequest(
     @JsonProperty("parse_mode") String parseMode,
     @JsonProperty("caption_entities") List<MessageEntity> captionEntities,
     @JsonProperty("show_caption_above_media") Boolean showCaptionAboveMedia,
-    @JsonProperty("disable_notification") Boolean disableNotification
+    @JsonProperty("disable_notification") Boolean disableNotification,
+    @JsonProperty("reply_parameters") ReplyParameters replyParameters
 ) {
+
+    public SendPaidMediaRequest(
+        String businessConnectionId,
+        Object chatId,
+        Integer starCount,
+        List<InputPaidMedia> media,
+        String payload,
+        String caption,
+        String parseMode,
+        List<MessageEntity> captionEntities,
+        Boolean showCaptionAboveMedia,
+        Boolean disableNotification
+    ) {
+        this(
+            businessConnectionId,
+            chatId,
+            starCount,
+            media,
+            payload,
+            caption,
+            parseMode,
+            captionEntities,
+            showCaptionAboveMedia,
+            disableNotification,
+            null
+        );
+    }
 
     public SendPaidMediaRequest {
         Objects.requireNonNull(chatId, "chatId must not be null");
@@ -32,5 +61,20 @@ public record SendPaidMediaRequest(
         media = List.copyOf(media);
         captionEntities = captionEntities == null ? null : List.copyOf(captionEntities);
     }
-}
 
+    public SendPaidMediaRequest withReplyTo(int messageId) {
+        return new SendPaidMediaRequest(
+            businessConnectionId,
+            chatId,
+            starCount,
+            media,
+            payload,
+            caption,
+            parseMode,
+            captionEntities,
+            showCaptionAboveMedia,
+            disableNotification,
+            ReplyParameters.of(messageId)
+        );
+    }
+}

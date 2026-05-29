@@ -3,6 +3,7 @@ package ru.tardyon.botframework.telegram.api.method;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
+import ru.tardyon.botframework.telegram.api.model.ReplyParameters;
 import ru.tardyon.botframework.telegram.api.model.payment.LabeledPrice;
 
 public record SendInvoiceRequest(
@@ -25,8 +26,56 @@ public record SendInvoiceRequest(
     @JsonProperty("need_phone_number") Boolean needPhoneNumber,
     @JsonProperty("need_email") Boolean needEmail,
     @JsonProperty("need_shipping_address") Boolean needShippingAddress,
-    @JsonProperty("is_flexible") Boolean isFlexible
+    @JsonProperty("is_flexible") Boolean isFlexible,
+    @JsonProperty("reply_parameters") ReplyParameters replyParameters
 ) {
+
+    public SendInvoiceRequest(
+        Object chatId,
+        String title,
+        String description,
+        String payload,
+        String providerToken,
+        String currency,
+        List<LabeledPrice> prices,
+        Integer maxTipAmount,
+        List<Integer> suggestedTipAmounts,
+        String startParameter,
+        String providerData,
+        String photoUrl,
+        Integer photoSize,
+        Integer photoWidth,
+        Integer photoHeight,
+        Boolean needName,
+        Boolean needPhoneNumber,
+        Boolean needEmail,
+        Boolean needShippingAddress,
+        Boolean isFlexible
+    ) {
+        this(
+            chatId,
+            title,
+            description,
+            payload,
+            providerToken,
+            currency,
+            prices,
+            maxTipAmount,
+            suggestedTipAmounts,
+            startParameter,
+            providerData,
+            photoUrl,
+            photoSize,
+            photoWidth,
+            photoHeight,
+            needName,
+            needPhoneNumber,
+            needEmail,
+            needShippingAddress,
+            isFlexible,
+            null
+        );
+    }
 
     public SendInvoiceRequest {
         Objects.requireNonNull(chatId, "chatId must not be null");
@@ -42,5 +91,31 @@ public record SendInvoiceRequest(
         if (suggestedTipAmounts != null) {
             suggestedTipAmounts = List.copyOf(suggestedTipAmounts);
         }
+    }
+
+    public SendInvoiceRequest withReplyTo(int messageId) {
+        return new SendInvoiceRequest(
+            chatId,
+            title,
+            description,
+            payload,
+            providerToken,
+            currency,
+            prices,
+            maxTipAmount,
+            suggestedTipAmounts,
+            startParameter,
+            providerData,
+            photoUrl,
+            photoSize,
+            photoWidth,
+            photoHeight,
+            needName,
+            needPhoneNumber,
+            needEmail,
+            needShippingAddress,
+            isFlexible,
+            ReplyParameters.of(messageId)
+        );
     }
 }
