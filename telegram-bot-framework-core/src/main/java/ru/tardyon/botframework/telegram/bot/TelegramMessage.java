@@ -43,7 +43,8 @@ public final class TelegramMessage {
             request.text(),
             request.replyMarkup(),
             request.businessConnectionId(),
-            request.parseMode()
+            request.parseMode(),
+            request.replyParameters()
         ));
     }
 

@@ -708,6 +708,24 @@ class DefaultTelegramApiClientStage2MethodsTest {
     }
 
     @Test
+    void sendMessageSupportsReplyParameters() {
+        RecordingHttpClient httpClient = new RecordingHttpClient(
+            """
+                {"ok":true,"result":{"message_id":1,"chat":{"id":123,"type":"private"},"date":1}}
+                """
+        );
+        DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);
+
+        client.sendMessage(
+            SendMessageRequest.of(123L, "reply").withReplyTo(42)
+        );
+
+        assertEquals("/bottoken/sendMessage", httpClient.lastRequest().uri().getPath());
+        String body = new String(readBody(httpClient.lastRequest()), StandardCharsets.UTF_8);
+        assertTrue(body.contains("\"reply_parameters\":{\"message_id\":42}"));
+    }
+
+    @Test
     void answerShippingQueryUsesExpectedMethodAndPayload() {
         RecordingHttpClient httpClient = new RecordingHttpClient(okTrueResponse());
         DefaultTelegramApiClient client = new DefaultTelegramApiClient("token", "https://api.telegram.org", httpClient, objectMapper);

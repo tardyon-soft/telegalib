@@ -60,7 +60,7 @@ class TelegramWrappersTest {
         TelegramMessage wrapper = new TelegramMessage(source, client);
 
         wrapper.reply("pong");
-        wrapper.reply(new SendMessageRequest("wrong-chat", "pong2", null));
+        wrapper.reply(new SendMessageRequest("wrong-chat", "pong2", null).withReplyTo(99));
         wrapper.editText("edited");
         wrapper.editReplyMarkup(
             Keyboards.inlineKeyboard().row(Keyboards.callbackButton("Menu", "menu:1")).build()
@@ -69,6 +69,7 @@ class TelegramWrappersTest {
 
         assertEquals(555L, client.lastSendMessageRequest.chatId());
         assertEquals("pong2", client.lastSendMessageRequest.text());
+        assertEquals(99, client.lastSendMessageRequest.replyParameters().messageId());
         assertEquals(555L, client.lastEditMessageTextRequest.chatId());
         assertEquals(77, client.lastEditMessageTextRequest.messageId());
         assertEquals(555L, client.lastDeleteMessageRequest.chatId());
