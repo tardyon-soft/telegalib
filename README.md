@@ -1,28 +1,27 @@
 # telegram-bot-framework
 
-Java Telegram Bot framework (multi-module, Java 21, Gradle).
+`telegram-bot-framework` - многомодульная Java-библиотека для разработки Telegram-ботов. Репозиторий собран на Java 21 и Gradle.
 
-- `groupId`: `ru.tardyon.botframework`
-- base package: `ru.tardyon.botframework.telegram`
+Публикуемые артефакты:
 
-## Модули
+- `ru.tardyon.botframework:telegram-bot-framework-core`
+- `ru.tardyon.botframework:telegram-bot-framework-spring-boot-starter`
 
-- `telegram-bot-framework-core`
-  - основной runtime (vanilla Java, без Spring)
-- `telegram-bot-framework-spring-boot-starter`
-  - thin Spring Boot adapter над core
-- `telegram-bot-framework-demo`
-  - пример приложения
-- `telegram-bot-framework-screen-demo`
-  - отдельный пример экранного API (screen stack + widgets)
-- `telegram-bot-framework-botapi-generator`
-  - tooling-only генератор DTO/method scaffolding
-- `telegram-bot-framework-testkit`
-  - testing-only fake Bot API server/simulators/assertions
+Остальные модули в репозитории используются как demo, testkit или tooling.
 
-## Что ставить в проект
+## Что есть в библиотеке
 
-Vanilla Java:
+- `TelegramApiClient` для прямой работы с Telegram Bot API.
+- runtime для long polling и webhook.
+- `Router`, фильтры и middleware для маршрутизации update-событий.
+- FSM с `StateStorage`.
+- screen API со стеком экранов и состоянием экранов.
+- Spring Boot starter с автоконфигурацией, аннотациями и webhook-контроллером.
+- testkit для интеграционных тестов.
+
+## Подключение
+
+### Vanilla Java
 
 ```kotlin
 repositories {
@@ -34,7 +33,7 @@ dependencies {
 }
 ```
 
-Spring Boot:
+### Spring Boot
 
 ```kotlin
 repositories {
@@ -46,9 +45,9 @@ dependencies {
 }
 ```
 
-`starter` подтягивает `core` транзитивно.
+## Быстрый старт
 
-## Быстрый старт (vanilla Java)
+### Vanilla Java
 
 ```java
 import ru.tardyon.botframework.telegram.api.DefaultTelegramApiClient;
@@ -78,9 +77,9 @@ public class VanillaBotMain {
 }
 ```
 
-## Spring Boot usage
+### Spring Boot
 
-### application.yml (polling + cloud)
+`application.yml`:
 
 ```yaml
 telegram:
@@ -89,46 +88,16 @@ telegram:
     mode: polling
     transport:
       mode: cloud
-      base-url: https://api.telegram.org
     polling:
       enabled: true
       timeout: 30
       limit: 100
 ```
 
-### application.yml (polling + local Bot API)
-
-```yaml
-telegram:
-  bot:
-    token: ${BOT_TOKEN}
-    mode: polling
-    transport:
-      mode: local
-      base-url: http://127.0.0.1:8081
-      local-file-uri-upload-enabled: true
-    polling:
-      enabled: true
-```
-
-### application.yml (webhook)
-
-```yaml
-telegram:
-  bot:
-    token: ${BOT_TOKEN}
-    mode: webhook
-    webhook:
-      enabled: true
-      path: /telegram/webhook
-      public-url: ${BOT_WEBHOOK_PUBLIC_URL}
-      secret-token: ${BOT_WEBHOOK_SECRET_TOKEN:}
-      drop-pending-updates: true
-```
-
-### Annotation controller пример
+Контроллер:
 
 ```java
+import ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery;
 import ru.tardyon.botframework.telegram.bot.TelegramMessage;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.BotController;
 import ru.tardyon.botframework.telegram.spring.boot.annotation.OnCallbackQuery;
@@ -148,96 +117,25 @@ public class MyBotController {
     }
 
     @OnCallbackQuery(callbackPrefix = "menu:")
-    public void onMenu(ru.tardyon.botframework.telegram.bot.TelegramCallbackQuery callback) {
+    public void onMenu(TelegramCallbackQuery callback) {
         callback.answer("OK");
     }
 }
 ```
 
-## Diagnostics hooks
+## Документация
 
-Если нужны diagnostics listeners в starter:
+- [Модули и состав репозитория](docs/modules.md)
+- [Использование в vanilla Java](docs/vanilla-java.md)
+- [Использование со Spring Boot](docs/spring-boot.md)
+- [Маршрутизация, фильтры и FSM](docs/routing-and-fsm.md)
+- [Screen API и widgets](docs/screens-and-widgets.md)
+- [Testkit и demo-модули](docs/testkit-and-demo.md)
 
-```java
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import ru.tardyon.botframework.telegram.diagnostics.BotApiRequestListener;
-import ru.tardyon.botframework.telegram.diagnostics.BotApiResponseListener;
+## Что выбрать
 
-@Configuration
-public class DiagnosticsConfig {
-    @Bean
-    BotApiRequestListener requestListener() {
-        return event -> System.out.println("API -> " + event.methodName());
-    }
-
-    @Bean
-    BotApiResponseListener responseListener() {
-        return event -> System.out.println("API <- " + event.methodName() + " success=" + event.success());
-    }
-}
-```
-
-И включение в config:
-
-```yaml
-telegram:
-  bot:
-    diagnostics:
-      enabled: true
-```
-
-## Demo
-
-`telegram-bot-framework-demo` содержит готовые профили:
-
-- `polling,cloud`
-- `polling,local`
-- `webhook,cloud`
-- `fake` (test/dev режим через testkit)
-
-Запуск:
-
-```bash
-./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling,cloud'
-./gradlew :telegram-bot-framework-demo:bootRun --args='--spring.profiles.active=polling,local'
-./gradlew :telegram-bot-framework-demo:test --tests '*DemoFakeModeIntegrationTest'
-```
-
-`telegram-bot-framework-screen-demo`:
-
-```bash
-BOT_TOKEN=<your_token> ./gradlew :telegram-bot-framework-screen-demo:bootRun
-```
-
-## Публикация в Maven Central (через GitLab CI + JReleaser)
-
-Публикуются только:
-
-- `telegram-bot-framework-core`
-- `telegram-bot-framework-spring-boot-starter`
-
-Нужные переменные окружения (как в `.gitlab-ci.yml`):
-
-- `RELEASE_VERSION`
-- `JRELEASER_MAVENCENTRAL_USERNAME`
-- `JRELEASER_MAVENCENTRAL_PASSWORD`
-- `JRELEASER_GPG_PUBLIC_KEY`
-- `JRELEASER_GPG_SECRET_KEY`
-- `JRELEASER_GPG_PASSPHRASE`
-
-Команда пайплайна:
-
-```bash
-./gradlew --no-daemon --stacktrace --no-configuration-cache clean publish jreleaserDeploy
-```
-
-`publish` складывает артефакты в `build/staging-deploy`, `jreleaserDeploy` отправляет staging в Maven Central Publisher API.
-
-## Границы модулей
-
-- `core` — production runtime/library logic
-- `starter` — только wiring/autoconfiguration/lifecycle/annotation integration
-- `demo` — только example app
-- `generator` — tooling only
-- `testkit` — testing support only
+- Если нужен минимальный runtime без Spring, начните с [vanilla Java](docs/vanilla-java.md).
+- Если приложение уже на Spring Boot, используйте [starter](docs/spring-boot.md).
+- Если нужен пошаговый диалог или хранение пользовательского состояния, смотрите [Router, Filters и FSM](docs/routing-and-fsm.md).
+- Если нужен экранный интерфейс поверх callback-кнопок, смотрите [Screen API и widgets](docs/screens-and-widgets.md).
+- Если нужно тестировать интеграцию без реального Telegram API, используйте [testkit](docs/testkit-and-demo.md).
